@@ -1,0 +1,9 @@
+
+################# test ###########
+
+- file: 'assets/images/radio/europa_plus.png'
+  id: europa_plus_img
+  type: rgb565
+  resize: 194x400
+  transparency: alpha_channel
+  byte_order: little_endian

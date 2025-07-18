@@ -1,0 +1,124 @@
+packages:
+  home: !include pages/home.yaml
+  audio: !include services/audio.yaml
+
+image: !include common/images.yaml
+font: !include common/fonts.yaml
+color: !include common/colors.yaml
+substitutions: !include common/substitutions.yaml
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: false
+
+external_components:
+  - source: github://clydebarrow/esphome@mipi-dsi
+    components: [mipi, mipi_dsi, const, esp_ldo]
+
+esp32:
+  board: esp32-p4-evboard
+  flash_size: 32Mb
+  cpu_frequency: 400MHz
+  framework:
+    type: esp-idf
+    version: 5.4.2
+    platform_version: 54.03.21
+    advanced:
+      enable_idf_experimental_features: yes
+
+logger:
+  level: debug
+  logs:
+    lvgl: info
+  hardware_uart: UART0
+
+# debug:
+
+psram:
+  speed: 200MHz
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+ethernet:
+  type: IP101
+  mdc_pin: GPIO31
+  mdio_pin: GPIO52
+  clk: 
+    pin: GPIO50
+    mode: CLK_EXT_IN
+  phy_addr: 1
+  power_pin: GPIO51
+
+# esp32_hosted:
+#   active_high: true
+#   variant: ESP32C6
+#   reset_pin: GPIO54
+#   cmd_pin: GPIO19
+#   clk_pin: GPIO18
+#   d0_pin: GPIO14
+#   d1_pin: GPIO15
+#   d2_pin: GPIO16
+#   d3_pin: GPIO17
+
+# wifi:
+#   ssid: !secret wifi_ssid
+#   password: !secret wifi_password
+
+display:
+  - platform: mipi_dsi
+    model: WAVESHARE-P4-86-PANEL
+
+i2c:
+  sda: GPIO7
+  scl: GPIO8
+  scan: true
+  frequency: 400kHz
+  id: i2c_bus
+
+touchscreen:
+  - platform: gt911
+    id: touchscreen_
+    # address: 0x14
+    on_touch:
+      - logger.log:
+          format: "Touch at %d/%d"
+          args: [touch.x, touch.y]
+
+# switch:
+#   - id: backlight_
+#     platform: gpio
+#     pin:
+#       inverted: true
+#       number: GPIO26
+#     restore_mode: ALWAYS_ON
+
+output:
+  - platform: ledc
+    id: backlight_
+    pin: GPIO26
+    frequency: 100Hz
+    inverted: true
+
+light:
+  - platform: monochromatic
+    name: "Подсветка"
+    output: backlight_
+    id: backlight_light
+    restore_mode: ALWAYS_ON
+
+api:
+  encryption:
+    key: !secret waveshare_api
+
+ota:
+  - platform: esphome
+    password: !secret waveshare_ota
+
+lvgl:
+  buffer_size: 100%
+  byte_order: little_endian
+
+

@@ -1,0 +1,9 @@
+{
+  "idf.pythonInstallPath": "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+  "files.associations": {
+    "preferences.h": "c",
+    "entity_base.h": "c",
+    "esp_vfs_fat.h": "c",
+    "wear_levelling.h": "c"
+  }
+}
