@@ -1,3 +1,10 @@
+<p align="center">
+    <img alt="Static Badge" src="https://img.shields.io/badge/made%20by-alaltitov-blue">
+    <img alt="Static Badge" src="https://img.shields.io/badge/version-v1.0%20Alpha-green">
+    <img alt="Static Badge" src="https://img.shields.io/badge/esphome min version-2025.7.2-red">
+    <img alt="Static Badge" src="https://img.shields.io/badge/license-MIT-orange">
+</p>
+
 # Waveshare ESP32-P4-86-Panel-ETH-2RO & ESPHome  
 *First Tests and Integration Guide*
 
