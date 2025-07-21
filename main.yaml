@@ -87,21 +87,15 @@ touchscreen:
           format: "Touch at %d/%d"
           args: [touch.x, touch.y]
 
-# switch:
-#   - id: backlight_
-#     platform: gpio
-#     pin:
-#       inverted: true
-#       number: GPIO26
-#     restore_mode: ALWAYS_ON
-
 output:
   - platform: ledc
     id: backlight_
     pin: GPIO26
     frequency: 100Hz
     inverted: true
-
+    min_power: 0.1 # To prevent the backlight from being too dim
+    max_power: 0.8 # To prevent overheating due to excessive lighting
+    
 light:
   - platform: monochromatic
     name: "Подсветка"
