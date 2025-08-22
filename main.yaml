@@ -11,21 +11,16 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   name_add_mac_suffix: false
-
-external_components:
-  - source: github://clydebarrow/esphome@mipi-dsi
-    components: [mipi, mipi_dsi, const, esp_ldo]
-
+  
 esp32:
   board: esp32-p4-evboard
-  flash_size: 32Mb
-  cpu_frequency: 400MHz
   framework:
     type: esp-idf
-    version: 5.4.2
-    platform_version: 54.03.21
+    version: recommended
     advanced:
-      enable_idf_experimental_features: yes
+      enable_idf_experimental_features: true
+  flash_size: 32MB
+  cpu_frequency: 360MHz   # 360MHz may still fail due to PlatformIO/ESP-IDF compatibility
 
 logger:
   level: debug
