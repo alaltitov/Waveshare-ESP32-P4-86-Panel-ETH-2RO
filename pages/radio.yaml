@@ -5,7 +5,7 @@ substitutions:
 text_sensor:
   - platform: homeassistant
     id: media_player_esphome
-    entity_id: media_player.esp32_p4_waveshare_esp32_p4_media_player
+    entity_id: media_player.esp32_p4_waveshare_1_esp32_p4_media_player
 
 lvgl:
   pages:
@@ -45,7 +45,7 @@ lvgl:
                     - homeassistant.action:
                         action: media_player.play_media
                         data:
-                          entity_id: media_player.esp32_p4_waveshare_esp32_p4_media_player
+                          entity_id: media_player.esp32_p4_waveshare_1_esp32_p4_media_player
                           media_content_type: music
                           media_content_id: http://ep128.hostingradio.ru:8030/ep128
                   else:
