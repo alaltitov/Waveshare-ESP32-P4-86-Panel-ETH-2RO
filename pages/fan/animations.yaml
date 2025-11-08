@@ -1,0 +1,114 @@
+script:
+
+  - id: ${widget_name}_start_animation
+    then:
+      - lambda: |-
+          ESP_LOGD("fan", "START_ANIMATION script called");
+          
+          // Проверяем, не запущена ли уже анимация
+          if (id(${widget_name}_is_animating)) {
+            ESP_LOGD("fan", "Animation already running, skipping");
+            return;
+          }
+          
+          // Получаем указатель на виджет
+          auto img_widget = id(${widget_name}_state_image);
+          lv_obj_t* img = img_widget;
+          
+          // Останавливаем предыдущие анимации
+          lv_anim_del(img, nullptr);
+          
+          // Меняем изображение на зеленое при старте анимации
+          lv_img_set_src(img, id(fan_green_image));
+          
+          // Получаем процент для расчета скорости
+          int percentage = id(${widget_name}_current_percentage);
+          if (percentage < 1) percentage = 100;
+          
+          // Вычисляем время анимации
+          int anim_time = (int)(3000.0 / (percentage / 33.0));
+          if (anim_time < 500) anim_time = 500;
+          if (anim_time > 5000) anim_time = 5000;
+          
+          ESP_LOGD("fan", "Animation time: %d ms (percentage: %d)", anim_time, percentage);
+          
+          // Определяем направление
+          bool is_forward = id(${widget_name}_direction_sensor).state == "forward";
+          int start_angle = is_forward ? 0 : 3600;
+          int end_angle = is_forward ? 3600 : 0;
+          
+          ESP_LOGD("fan", "Direction: %s", is_forward ? "forward" : "reverse");
+          
+          // Создаем анимацию вращения
+          lv_anim_t anim_rotation;
+          
+          lv_anim_init(&anim_rotation);
+          lv_anim_set_var(&anim_rotation, img);
+          lv_anim_set_values(&anim_rotation, start_angle, end_angle);
+          lv_anim_set_time(&anim_rotation, anim_time);
+          lv_anim_set_repeat_count(&anim_rotation, LV_ANIM_REPEAT_INFINITE);
+          lv_anim_set_exec_cb(&anim_rotation, [](void * var, int32_t v) {
+            lv_img_set_angle((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_rotation, lv_anim_path_linear);
+          lv_anim_start(&anim_rotation);
+          
+          // Устанавливаем флаг анимации
+          id(${widget_name}_is_animating) = true;
+          
+          ESP_LOGD("fan", "✓ Animation STARTED");
+
+  - id: ${widget_name}_stop_animation
+    then:
+      - lambda: |-
+          ESP_LOGD("fan", "STOP_ANIMATION script called");
+          
+          // Получаем указатель на виджет
+          auto img_widget = id(${widget_name}_state_image);
+          lv_obj_t* img = img_widget;
+          
+          // Останавливаем анимации
+          lv_anim_del(img, nullptr);
+          
+          // Возвращаем изображение на исходное (голубое)
+          lv_img_set_src(img, id(fan_misty_image));
+          
+          // Сбрасываем угол поворота
+          lv_img_set_angle(img, 0);
+          
+          // Сбрасываем флаг анимации
+          id(${widget_name}_is_animating) = false;
+          
+          ESP_LOGD("fan", "✓ Animation STOPPED");
+
+  - id: ${widget_name}_update_animation_speed
+    then:
+      - lambda: |-
+          ESP_LOGD("fan", "UPDATE_SPEED called");
+          
+          // Обновляем скорость только если анимация запущена
+          if (!id(${widget_name}_is_animating)) {
+            ESP_LOGD("fan", "Animation not running, skipping");
+            return;
+          }
+          
+          ESP_LOGD("fan", "Restarting animation with new speed");
+          id(${widget_name}_is_animating) = false;
+          
+      - script.execute: ${widget_name}_start_animation
+
+  - id: ${widget_name}_update_animation_direction
+    then:
+      - lambda: |-
+          ESP_LOGD("fan", "UPDATE_DIRECTION called");
+          
+          // Обновляем направление только если анимация запущена
+          if (!id(${widget_name}_is_animating)) {
+            ESP_LOGD("fan", "Animation not running, skipping");
+            return;
+          }
+          
+          ESP_LOGD("fan", "Restarting animation with new direction");
+          id(${widget_name}_is_animating) = false;
+          
+      - script.execute: ${widget_name}_start_animation

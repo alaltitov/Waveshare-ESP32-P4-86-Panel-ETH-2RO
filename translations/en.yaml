@@ -80,3 +80,47 @@ month:
   october: "October"
   november: "November"
   december: "December"
+
+vacuum:
+  name: "Vacuum"
+  state:
+    cleaning: "Cleaning"
+    docked: "Docked"
+    error: "Error"
+    idle: "Idle"
+    off: "Off"
+    on: "On"
+    paused: "Paused"
+    returning: "Returning to dock"
+
+cover:
+  name: "Cover"
+  state:
+    closed: Closed
+    closing: Closing
+    open: Open
+    opening: Opening
+    stopped: Stopped
+
+alarm_panel:
+  name: "Alarm control panel"
+  enter_pass: "Enter password"
+  wrong_pass: "Wrong password"
+  state:
+    armed: Armed
+    armed_away: Armed away
+    armed_custom_bypass: Armed custom bypass
+    armed_home: Armed home
+    armed_night: Armed night
+    armed_vacation: Armed vacation
+    arming: Arming
+    disarmed: Disarmed
+    disarming: Disarming
+    pending: Pending
+    triggered: Triggered
+
+fan:
+  name: Fan
+  state:
+    "on": "Off"
+    "off": "On"

@@ -1,0 +1,219 @@
+script:  
+  # MAIN -> SOURCE
+  - id: animate_mp_to_source
+    then:
+      - lambda: |-
+          // ШАГ 1: Кнопки уезжают, круг вниз, виджет исчезает
+          lv_anim_t anim_prev_btn, anim_next_btn, anim_circle, anim_main_fade;
+          
+          lv_anim_init(&anim_prev_btn);
+          lv_anim_set_var(&anim_prev_btn, id(media_player_prev_btn));
+          lv_anim_set_values(&anim_prev_btn, 45, -225);
+          lv_anim_set_time(&anim_prev_btn, 600);
+          lv_anim_set_exec_cb(&anim_prev_btn, [](void * var, int32_t v) {
+            lv_obj_set_x((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_prev_btn, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_prev_btn);
+          
+          lv_anim_init(&anim_next_btn);
+          lv_anim_set_var(&anim_next_btn, id(media_player_next_btn));
+          lv_anim_set_values(&anim_next_btn, -45, 225);
+          lv_anim_set_time(&anim_next_btn, 600);
+          lv_anim_set_exec_cb(&anim_next_btn, [](void * var, int32_t v) {
+            lv_obj_set_x((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_next_btn, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_next_btn);
+          
+          lv_anim_init(&anim_circle);
+          lv_anim_set_var(&anim_circle, id(media_player_circle_background));
+          lv_anim_set_values(&anim_circle, 60, 600);
+          lv_anim_set_time(&anim_circle, 600);
+          lv_anim_set_exec_cb(&anim_circle, [](void * var, int32_t v) {
+            lv_obj_set_y((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_circle, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_circle);
+          
+          lv_anim_init(&anim_main_fade);
+          lv_anim_set_var(&anim_main_fade, id(media_widget_background));
+          lv_anim_set_values(&anim_main_fade, 255, 0);
+          lv_anim_set_time(&anim_main_fade, 600);
+          lv_anim_set_exec_cb(&anim_main_fade, [](void * var, int32_t v) {
+            lv_obj_set_style_opa((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_main_fade, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_main_fade);
+
+      - delay: 600ms
+      
+      - lambda: |-
+          // ШАГ 2: Средняя панель расширяется и поднимается + радиус -> 0
+          lv_anim_t anim_middle_expand, anim_middle_move_up, anim_radius;
+          
+          lv_anim_init(&anim_middle_expand);
+          lv_anim_set_var(&anim_middle_expand, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_middle_expand, 150, 240);
+          lv_anim_set_time(&anim_middle_expand, 350);
+          lv_anim_set_exec_cb(&anim_middle_expand, [](void * var, int32_t v) {
+            lv_obj_set_height((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_middle_expand, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_middle_expand);
+          
+          lv_anim_init(&anim_middle_move_up);
+          lv_anim_set_var(&anim_middle_move_up, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_middle_move_up, 345, 300);
+          lv_anim_set_time(&anim_middle_move_up, 350);
+          lv_anim_set_exec_cb(&anim_middle_move_up, [](void * var, int32_t v) {
+            lv_obj_set_y((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_middle_move_up, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_middle_move_up);
+          
+          // ✅ АНИМАЦИЯ РАДИУСА (30 -> 0)
+          lv_anim_init(&anim_radius);
+          lv_anim_set_var(&anim_radius, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_radius, 30, 0);
+          lv_anim_set_time(&anim_radius, 350);
+          lv_anim_set_exec_cb(&anim_radius, [](void * var, int32_t v) {
+            lv_obj_set_style_radius((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_radius, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_radius);
+
+      - delay: 350ms
+      
+      - lambda: |-
+          // ШАГ 3: Показываем панель источников
+          lv_obj_clear_flag(id(media_player_source_panel), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_set_style_opa(id(media_player_source_panel), 0, 0);
+          
+          lv_anim_t anim_source_panel_fade;
+          
+          lv_anim_init(&anim_source_panel_fade);
+          lv_anim_set_var(&anim_source_panel_fade, id(media_player_source_panel));
+          lv_anim_set_values(&anim_source_panel_fade, 0, 255);
+          lv_anim_set_time(&anim_source_panel_fade, 400);
+          lv_anim_set_exec_cb(&anim_source_panel_fade, [](void * var, int32_t v) {
+            lv_obj_set_style_opa((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_source_panel_fade, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_source_panel_fade);
+
+      - delay: 400ms
+      
+      - lambda: |-
+          id(is_animating) = false;
+
+
+  # SOURCE -> MAIN
+  - id: animate_source_to_mp
+    then:
+      - lambda: |-
+          id(is_animating) = true;
+          
+          // ШАГ 1: Скрываем панель источников
+          lv_anim_t anim_source_panel_fade;
+          
+          lv_anim_init(&anim_source_panel_fade);
+          lv_anim_set_var(&anim_source_panel_fade, id(media_player_source_panel));
+          lv_anim_set_values(&anim_source_panel_fade, 255, 0);
+          lv_anim_set_time(&anim_source_panel_fade, 400);
+          lv_anim_set_exec_cb(&anim_source_panel_fade, [](void * var, int32_t v) {
+            lv_obj_set_style_opa((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_source_panel_fade, lv_anim_path_ease_in_out);
+          lv_anim_set_ready_cb(&anim_source_panel_fade, [](lv_anim_t * a) {
+            lv_obj_add_flag(id(media_player_source_panel), LV_OBJ_FLAG_HIDDEN);
+          });
+          lv_anim_start(&anim_source_panel_fade);
+
+      - delay: 400ms
+      
+      - lambda: |-
+          // ШАГ 2: Средняя панель сжимается и опускается + радиус -> 30
+          lv_anim_t anim_middle_shrink, anim_middle_move_down, anim_radius;
+          
+          lv_anim_init(&anim_middle_shrink);
+          lv_anim_set_var(&anim_middle_shrink, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_middle_shrink, 240, 150);
+          lv_anim_set_time(&anim_middle_shrink, 350);
+          lv_anim_set_exec_cb(&anim_middle_shrink, [](void * var, int32_t v) {
+            lv_obj_set_height((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_middle_shrink, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_middle_shrink);
+          
+          lv_anim_init(&anim_middle_move_down);
+          lv_anim_set_var(&anim_middle_move_down, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_middle_move_down, 300, 345);
+          lv_anim_set_time(&anim_middle_move_down, 350);
+          lv_anim_set_exec_cb(&anim_middle_move_down, [](void * var, int32_t v) {
+            lv_obj_set_y((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_middle_move_down, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_middle_move_down);
+          
+          // ✅ АНИМАЦИЯ РАДИУСА (0 -> 30)
+          lv_anim_init(&anim_radius);
+          lv_anim_set_var(&anim_radius, id(media_player_primary_controls_background));
+          lv_anim_set_values(&anim_radius, 0, 30);
+          lv_anim_set_time(&anim_radius, 350);
+          lv_anim_set_exec_cb(&anim_radius, [](void * var, int32_t v) {
+            lv_obj_set_style_radius((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_radius, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_radius);
+
+      - delay: 350ms
+      
+      - lambda: |-
+          // ШАГ 3: Кнопки возвращаются, круг вверх, виджет появляется
+          lv_anim_t anim_prev_btn, anim_next_btn, anim_circle, anim_main_fade;
+          
+          lv_anim_init(&anim_prev_btn);
+          lv_anim_set_var(&anim_prev_btn, id(media_player_prev_btn));
+          lv_anim_set_values(&anim_prev_btn, -225, 45);
+          lv_anim_set_time(&anim_prev_btn, 600);
+          lv_anim_set_exec_cb(&anim_prev_btn, [](void * var, int32_t v) {
+            lv_obj_set_x((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_prev_btn, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_prev_btn);
+          
+          lv_anim_init(&anim_next_btn);
+          lv_anim_set_var(&anim_next_btn, id(media_player_next_btn));
+          lv_anim_set_values(&anim_next_btn, 225, -45);
+          lv_anim_set_time(&anim_next_btn, 600);
+          lv_anim_set_exec_cb(&anim_next_btn, [](void * var, int32_t v) {
+            lv_obj_set_x((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_next_btn, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_next_btn);
+          
+          lv_anim_init(&anim_circle);
+          lv_anim_set_var(&anim_circle, id(media_player_circle_background));
+          lv_anim_set_values(&anim_circle, 600, 60);
+          lv_anim_set_time(&anim_circle, 600);
+          lv_anim_set_exec_cb(&anim_circle, [](void * var, int32_t v) {
+            lv_obj_set_y((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_circle, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_circle);
+          
+          lv_anim_init(&anim_main_fade);
+          lv_anim_set_var(&anim_main_fade, id(media_widget_background));
+          lv_anim_set_values(&anim_main_fade, 0, 255);
+          lv_anim_set_time(&anim_main_fade, 600);
+          lv_anim_set_exec_cb(&anim_main_fade, [](void * var, int32_t v) {
+            lv_obj_set_style_opa((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_main_fade, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_main_fade);
+
+      - delay: 600ms
+      
+      - lambda: |-
+          id(is_animating) = false;

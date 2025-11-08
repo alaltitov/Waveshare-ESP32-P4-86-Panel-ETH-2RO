@@ -14,13 +14,15 @@
 - file: 'assets/images/loading/homeassistant.png'
   id: ha_img
   type: rgb565
-  resize: 600x123  # 400x82 * 1.5
+  resize: 600x123
+  byte_order: little_endian
   transparency: alpha_channel
 
 - file: 'assets/images/loading/esphome.png'
   id: esphome_img
   type: rgb565
-  resize: 480x143  # 320x95 * 1.5 (округлено)
+  resize: 480x143
+  byte_order: little_endian
   transparency: alpha_channel
 
   #############################
@@ -30,6 +32,7 @@
 - file: 'assets/images/light/lightbulb.png'
   id: lightbulb_image
   type: rgb565
+  byte_order: little_endian
   transparency: alpha_channel
 
 # - file: 'assets/images/light/rgb_ring.png'
@@ -41,113 +44,32 @@
   ########## VACUUM ###########
   #############################
 
-# - file: 'img/vacuum/vacuum.png'
-#   id: vacuum_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
+- file: 'assets/images/vacuum/vacuum.png'
+  id: vacuum_img
+  type: rgb565
+  resize: 240x240
+  byte_order: little_endian
+  transparency: alpha_channel
 
-# - file: 'img/vacuum/vacuum_0_10.png'
-#   id: vacuum_0_10_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
 
-# - file: 'img/vacuum/vacuum_0_20.png'
-#   id: vacuum_0_20_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
+  #############################
+  ########### FAN #############
+  #############################
 
-# - file: 'img/vacuum/vacuum_0_30.png'
-#   id: vacuum_0_30_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
+- file: 'assets/images/fan/fan_green.png'
+  id: fan_green_image
+  type: rgb565
+  transparency: alpha_channel
+  byte_order: little_endian
+  resize: 75x75
 
-# - file: 'img/vacuum/vacuum_5.png'
-#   id: vacuum_5_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
+- file: 'assets/images/fan/fan_misty.png'
+  id: fan_misty_image
+  type: rgb565
+  transparency: alpha_channel
+  byte_order: little_endian
+  resize: 75x75
 
-# - file: 'img/vacuum/vacuum_10.png'
-#   id: vacuum_10_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_15.png'
-#   id: vacuum_15_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_20.png'
-#   id: vacuum_20_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_20_10.png'
-#   id: vacuum_20_10_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_20_20.png'
-#   id: vacuum_20_20_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_20_30.png'
-#   id: vacuum_20_30_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_355.png'
-#   id: vacuum_355_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_350.png'
-#   id: vacuum_350_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_345.png'
-#   id: vacuum_345_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_340.png'
-#   id: vacuum_340_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_340_10.png'
-#   id: vacuum_340_10_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_340_20.png'
-#   id: vacuum_340_20_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
-
-# - file: 'img/vacuum/vacuum_340_30.png'
-#   id: vacuum_340_30_img
-#   type: rgb565
-#   resize: 300x300  # 200x200 * 1.5
-#   transparency: alpha_channel
 
   #############################
   ########## WEATHER ##########

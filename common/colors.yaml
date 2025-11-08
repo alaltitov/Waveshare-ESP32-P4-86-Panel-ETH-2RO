@@ -12,22 +12,32 @@
   hex: 333333
 - id: color_gray
   hex: 666666
+- id: color_light_gray
+  hex: 999999
 - id: color_white
   hex: f2f0eb
 - id: color_red
   hex: ff0000
 - id: color_crimson
   hex: f5075c
-- id: color_blue
+- id: color_light_blue
   hex: 2fc0ff
+- id: color_blue
+  hex: 4C9FFF
 - id: color_yellow
   hex: e7c12c
+- id: color_light_yellow
+  hex: f0d45c
 - id: color_amber
   hex: f4a900
 - id: color_mint
   hex: 39d19c
-- id: color_green
+- id: color_light_mint
+  hex: 66dcb3
+- id: color_light_green
   hex: 00ff00
+- id: color_green
+  hex: 5CA848
 - id: color_orange
   hex: f07c40
 - id: color_deep_orange

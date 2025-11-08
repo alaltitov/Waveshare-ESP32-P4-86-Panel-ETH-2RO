@@ -235,47 +235,47 @@ sensor:
               format: "%.1f°"
               args: [id(esp32_temperature).state]
 
-  # # WiFi Signal Strength in dBm
-  # - platform: wifi_signal
-  #   name: "WiFi Signal"
-  #   id: wifi_signal_db
-  #   update_interval: 30s
-  #   unit_of_measurement: "dBm"
-  #   on_value:
-  #     then:
-  #       - lvgl.label.update:
-  #           id: wifi_signal_info_state
-  #           text:
-  #             format: "%.1f dBm"
-  #             args: [id(wifi_signal_db).state]
+  # WiFi Signal Strength in dBm
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 30s
+    unit_of_measurement: "dBm"
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: wifi_signal_info_state
+            text:
+              format: "%.1f dBm"
+              args: [id(wifi_signal_db).state]
 
-  # # WI-FI Signal Strength in %
-  # - platform: wifi_signal
-  #   id: wifi_signal_percent
-  #   update_interval: 30s
-  #   filters:
-  #     - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
-  #   unit_of_measurement: "%"
-  #   on_value: 
-  #     then:
-  #       - lvgl.label.update:
-  #           id: wifi_status
-  #           text_color: !lambda |-
-  #             if (id(wifi_signal_percent).state > 0) {
-  #             return lv_color_hex(0x5CA848);
-  #             }
-  #             return lv_color_hex(0x5CA848);
-  #           text: !lambda |-
-  #             if (id(wifi_signal_percent).state > 0 && id(wifi_signal_percent).state < 26) {
-  #             return "${wifi_25_icon}";
-  #             } else if (id(wifi_signal_percent).state > 25 && id(wifi_signal_percent).state < 51) {
-  #             return "${wifi_50_icon}";
-  #             } else if (id(wifi_signal_percent).state > 50 && id(wifi_signal_percent).state < 76) {
-  #             return "${wifi_75_icon}";
-  #             } else if (id(wifi_signal_percent).state > 75) {
-  #             return "${wifi_100_icon}";
-  #             }
-  #             return "${wifi_100_icon}";
+  # WI-FI Signal Strength in %
+  - platform: wifi_signal
+    id: wifi_signal_percent
+    update_interval: 30s
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: wifi_status
+            text_color: !lambda |-
+              if (id(wifi_signal_percent).state > 0) {
+              return lv_color_hex(0x5CA848);
+              }
+              return lv_color_hex(0x5CA848);
+            text: !lambda |-
+              if (id(wifi_signal_percent).state > 0 && id(wifi_signal_percent).state < 26) {
+              return "${wifi_25_icon}";
+              } else if (id(wifi_signal_percent).state > 25 && id(wifi_signal_percent).state < 51) {
+              return "${wifi_50_icon}";
+              } else if (id(wifi_signal_percent).state > 50 && id(wifi_signal_percent).state < 76) {
+              return "${wifi_75_icon}";
+              } else if (id(wifi_signal_percent).state > 75) {
+              return "${wifi_100_icon}";
+              }
+              return "${wifi_100_icon}";
 
 text_sensor:
 
@@ -326,27 +326,27 @@ text_sensor:
             id: weather_wind_speed_unit
             text: !lambda return x;
 
-  # # IP address
-  # - platform: wifi_info
-  #   ip_address:
-  #     name: "IP Address"
-  #     id: wifi_ip_address
-  #     on_value:
-  #       then:
-  #         - lvgl.label.update:
-  #             id: ip_address_info_state
-  #             text: !lambda return id(wifi_ip_address).state.c_str();
+  # IP address
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: wifi_ip_address
+      on_value:
+        then:
+          - lvgl.label.update:
+              id: ip_address_info_state
+              text: !lambda return id(wifi_ip_address).state.c_str();
 
-  # # MAC address
-  # - platform: wifi_info
-  #   mac_address:
-  #     name: "WiFi MAC"
-  #     id: wifi_mac_address
-  #     on_value:
-  #       then:
-  #         - lvgl.label.update:
-  #             id: mac_address_info_state
-  #             text: !lambda return id(wifi_mac_address).state.c_str();
+  # MAC address
+  - platform: wifi_info
+    mac_address:
+      name: "WiFi MAC"
+      id: wifi_mac_address
+      on_value:
+        then:
+          - lvgl.label.update:
+              id: mac_address_info_state
+              text: !lambda return id(wifi_mac_address).state.c_str();
 
   # ESPHome version with compilation date
   - platform: template
@@ -1005,6 +1005,14 @@ lvgl:
                               pressed:
                                 bg_color: color_steel_blue
                                 shadow_width: 6
+                              on_click:
+                                - lvgl.page.show: ${light_widget_name_1}_light_page
+                                - delay: 250ms
+                                - lambda: |-
+                                    int lights = ${lights_amount};
+                                    if (lights >= 2) {
+                                      lv_obj_clear_flag(id(light_select_widget), LV_OBJ_FLAG_HIDDEN);
+                                    }
 
                           - obj:
                               width: 90
@@ -1205,6 +1213,9 @@ lvgl:
                           flex_flow: column
                           flex_align_main: center
                           flex_align_cross: center
+                        widgets:
+                          container:
+                            hidden: true
 
                     - obj:
                         id: weather_forecast_hourly
@@ -1224,6 +1235,9 @@ lvgl:
                           flex_flow: column
                           flex_align_main: center
                           flex_align_cross: center
+                        widgets:
+                          container:
+                            hidden: true
 
         # SYSTEM BUTTONS (DOWN) 
         - obj:

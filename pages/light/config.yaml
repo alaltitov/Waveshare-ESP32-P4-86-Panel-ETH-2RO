@@ -1,0 +1,28 @@
+substitutions: !include substitutions.yaml
+
+packages:
+  select: !include select.yaml
+
+  light_1: !include
+    file: light.yaml
+    vars:
+      light_entity: "${light_entity_1}"
+      widget_name: "${light_widget_name_1}"
+      
+  light_2: !include
+    file: light.yaml
+    vars:
+      light_entity: "${light_entity_2}"
+      widget_name: "${light_widget_name_2}"
+      
+  light_3: !include
+    file: light.yaml
+    vars:
+      light_entity: "${light_entity_3}"
+      widget_name: "${light_widget_name_3}"
+
+  light_4: !include
+    file: light.yaml
+    vars:
+      light_entity: "${light_entity_4}"
+      widget_name: "${light_widget_name_4}"

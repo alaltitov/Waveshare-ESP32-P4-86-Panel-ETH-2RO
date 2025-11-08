@@ -1,0 +1,126 @@
+loading:
+  synchronization: "Synchronisation..."
+  connection_api: "Connexion à l'API..."
+
+ota:
+  start:
+    primary: "Démarrage MAJ!"
+    secondary: "Patientez..."
+  end: 
+    primary: "Mise à jour terminée!"
+    secondary: "Redemarrage..."
+  error:
+    primary: "Erreur de mise a jour !"
+    secondary: "Redemarrage..."
+  progress: "Mise à jour %0.1f%%"
+
+settings:
+  backlight: "Retro-éclairage"
+  sleep_time: "Délai veille"
+
+sleep_time:
+  never: "Jamais"
+  minute1: "1 minute"
+  minute5: "5 minutes"
+  minute10: "10 minutes"
+  minute30: "30 minutes"
+  hour1: "1 heure"
+  hour6: "6 heures"
+  hour12: "12 heures"
+
+forecasts:
+  daily: "par jour"
+  hourly: "par heure"
+
+weather:
+  clear-night: "Nuit claire"
+  cloudy: "Nuageux"
+  exceptional: "Alerte"
+  fog: "Brouillard"
+  hail: "Grêle"
+  lightning: "Foudre"
+  lightning-rainy: "Foudre, pluie"
+  partlycloudy: "Partiellement nuageux"
+  pouring: "Averses"
+  rainy: "Pluvieux"
+  snowy: "Neigeux"
+  snowy-rainy: "Neigeux, pluvieux"
+  sunny: "Ensoleillé"
+  windy: "Venteux"
+  windy-variant: "Venteux, nuageux"
+
+day_of_week:
+  monday: "Lundi"
+  tuesday: "Mardi"
+  wednesday: "Mercredi"
+  thursday: "Jeudi"
+  friday: "Vendredi"
+  saturday: "Samedi"
+  sunday: "Dimanche"
+
+day_of_week_short:
+  monday: "Lun"
+  tuesday: "Mar"
+  wednesday: "Mer"
+  thursday: "Jeu"
+  friday: "Ven"
+  saturday: "Sam"
+  sunday: "Dim"
+
+month:
+  january: "Janvier"
+  february: "Fevrier"
+  march: "Mars"
+  april: "Avril"
+  may: "Mai"
+  june: "Juin"
+  july: "Juillet"
+  august: "Aout"
+  september: "Septembre"
+  october: "Octobre"
+  november: "Novembre"
+  december: "Decembre"
+
+vacuum:
+  name: "Aspirateur"
+  state:
+    cleaning: "Nettoyage"
+    docked: "À la station d'accueil"
+    error: "Erreur"
+    idle: "Inactif"
+    off: "Éteint"
+    on: "Allumé"
+    paused: "En pause"
+    returning: "Retour à la station d'accueil"
+
+cover:
+  name: "Ouverture"
+  state:
+    closed: Fermé
+    closing: Fermeture
+    open: Ouvert
+    opening: Ouverture
+    stopped: Arrêté
+
+alarm_panel:
+  name: "Centrale d’alarme"
+  enter_pass: "Entrez le mot de passe"
+  wrong_pass: "Mot de passe incorrect"
+  state:
+    armed: Activée
+    armed_away: Activée (absence)
+    armed_custom_bypass: Activée (exception personnalisée)
+    armed_home: Activée (présence)
+    armed_night: Activée (nuit)
+    armed_vacation: Activée (vacances)
+    arming: Activation
+    disarmed: Désactivée
+    disarming: Désactivation
+    pending: En suspens
+    triggered: Déclenchée
+
+fan:
+  name: Fan
+  state:
+    "on": "Off"
+    "off": "On"

@@ -9,7 +9,7 @@ text_sensor:
 
 lvgl:
   pages:
-    - id: devices_page
+    - id: radio_page
       bg_color: color_slate_blue_gray
       widgets:
         - obj:

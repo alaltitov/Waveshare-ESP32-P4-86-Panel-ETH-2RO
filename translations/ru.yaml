@@ -80,3 +80,47 @@ month:
   october: "Октября"
   november: "Ноября"
   december: "Декабря"
+
+vacuum:
+  name: "Пылесос"
+  state:
+    cleaning: "Уборка"
+    docked: "У док-станции"
+    error: "Ошибка"
+    idle: "Бездействие"
+    off: "Выключено"
+    on: "Включено"
+    paused: "Пауза"
+    returning: "Возвращается к док-станции"
+
+cover:
+  name: "Заслон"
+  state:
+    closed: Закрыто
+    closing: Закрывается
+    open: Открыто
+    opening: Открывается
+    stopped: Остановлено
+
+alarm_panel:
+  name: "Панель сигнализации"
+  enter_pass: "Введите пароль"
+  wrong_pass: "Неверный пароль"
+  state:
+    armed: Под охраной
+    armed_away: Охрана (не дома)
+    armed_custom_bypass: Охрана с исключениями
+    armed_home: Охрана (дома)
+    armed_night: Охрана (ночь)
+    armed_vacation: Охрана (отпуск)
+    arming: Постановка на охрану
+    disarmed: Снято с охраны
+    disarming: Снятие с охраны
+    pending: Ожидание
+    triggered: Тревога
+
+fan:
+  name: "Вентилятор"
+  state:
+    "off": "Выключено"
+    "on": "Включено"
