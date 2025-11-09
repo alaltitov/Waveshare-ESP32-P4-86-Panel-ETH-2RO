@@ -1,4 +1,4 @@
 /.esphome/
-/secrets.yaml
+/src/secrets.yaml
 /.DS_Store
 /.vscode/
