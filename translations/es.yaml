@@ -87,20 +87,20 @@ vacuum:
     cleaning: "Limpiando"
     docked: "En la base"
     error: "Error"
-    idle: "Inactivo"
-    off: "Apagado"
-    on: "Encendido"
+    idle: "Inactiva"
+    off: "Apagada"
+    on: "Encendida"
     paused: "En pausa"
     returning: "Volviendo a la base"
 
 cover:
-  name: "Cubierta"
+  name: "Persiana"
   state:
-    closed: Cerrado
+    closed: Cerrada
     closing: Cerrando
-    open: Abierto
+    open: Abierta
     opening: Abriendo
-    stopped: Detenido
+    stopped: Detenida
 
 alarm_panel:
   name: "Panel de control de alarma"
@@ -112,16 +112,15 @@ alarm_panel:
     armed_custom_bypass: Armada personalizada
     armed_home: Armada en casa
     armed_night: Armada noche
-    armed_vacation: Armada de vacaciones
+    armed_vacation: Armada en vacaciones
     arming: Armando
     disarmed: Desarmada
     disarming: Desarmando
     pending: Pendiente
     triggered: Disparada
 
-
 fan:
-  name: Fan
+  name: "Ventilador"
   state:
-    "on": "Off"
-    "off": "On"
+    "on": "Encendido"
+    "off": "Apagado"
