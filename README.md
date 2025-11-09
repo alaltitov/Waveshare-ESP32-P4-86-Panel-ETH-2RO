@@ -41,7 +41,7 @@
 
 <div style="padding-top: 40px;">
   <a href="https://t.me/esphome_lvgl_chats">
-    <img src="/doc/images/t_me-esphome_lvgl_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
+    <img src="/docs/images/t_me-esphome_lvgl_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
   </a>
 </div>
 
