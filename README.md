@@ -1,19 +1,19 @@
 # LVGL ESPhome Waveshare-ESP32-P4-86-Panel-ETH-2RO custom firmware
 
 <p align="center">
- <img width="200px" src="/doc/images/loading.png">
- <img width="200px" src="/doc/images/home.png">
- <img width="200px" src="/doc/images/forecasts.png">
- <img width="200px" src="/doc/images/info.png">
- <img width="200px" src="/doc/images/settings.png">
- <img width="200px" src="/doc/images/light0.png">
- <img width="200px" src="/doc/images/light1.png">
- <img width="200px" src="/doc/images/climate0.png">
- <img width="200px" src="/doc/images/climate1.png">
- <img width="200px" src="/doc/images/climate2.png">
- <img width="200px" src="/doc/images/climate3.png">
- <img width="200px" src="/doc/images/media_player.png">
- <img width="200px" src="/doc/images/vacuum.png">
+ <img width="200px" src="/docs/images/loading.png">
+ <img width="200px" src="/docs/images/home.png">
+ <img width="200px" src="/docs/images/forecasts.png">
+ <img width="200px" src="/docs/images/info.png">
+ <img width="200px" src="/docs/images/settings.png">
+ <img width="200px" src="/docs/images/light0.png">
+ <img width="200px" src="/docs/images/light1.png">
+ <img width="200px" src="/docs/images/climate0.png">
+ <img width="200px" src="/docs/images/climate1.png">
+ <img width="200px" src="/docs/images/climate2.png">
+ <img width="200px" src="/docs/images/climate3.png">
+ <img width="200px" src="/docs/images/media_player.png">
+ <img width="200px" src="/docs/images/vacuum.png">
 </p>
 
 <p align="center">
@@ -25,13 +25,13 @@
 
 ## Support the Project
 
-<img src="/doc/images/donate.png" alt="QR Code" width="150" align="left" hspace="10"/>
+<img src="/docs/images/donate.png" alt="QR Code" width="150" align="left" hspace="10"/>
 
 <div style="padding-top: 40px;">
   <b>Support me on</b>
   <div style="height: 30px;"></div>
   <a href="https://boosty.to/altitov/donate">
-    <img src="/doc/images/boosty.png" alt="Boosty" width="160"/>
+    <img src="/docs/images/boosty.png" alt="Boosty" width="160"/>
   </a>
 </div>
 
@@ -39,9 +39,11 @@
 
 ## Questions, Discussions, Ideas
 
-<a href="https://t.me/esphome_lvgl_chats">
-  <img src="/doc/images/t_me-esphome_lvgl_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
-</a>
+<div style="padding-top: 40px;">
+  <a href="https://t.me/esphome_lvgl_chats">
+    <img src="/doc/images/t_me-esphome_lvgl_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
+  </a>
+</div>
 
 ## ⚠️ Important Notice
 - You'll need the DEV version of ESPHome 2025.11.0.
