@@ -1,0 +1,308 @@
+packages:
+  audio: !include services/audio.yaml
+  loading: !include common/pages/loading.yaml
+  home: !include pages/home/home.yaml
+  light: !include pages/light/config.yaml
+  devices: !include common/pages/devices.yaml
+  alarm_panel: !include pages/alarm_panel/config.yaml
+  climate: !include pages/climate/climate.yaml
+  cover: !include pages/cover/config.yaml
+  fan: !include pages/fan/config.yaml
+  media_player: !include pages/media_player/media_player.yaml
+  radio: !include pages/radio/radio.yaml
+  vacuum: !include pages/vacuum/vacuum.yaml
+
+image: !include common/images.yaml
+font: !include common/fonts.yaml
+color: !include common/colors.yaml
+substitutions: !include common/substitutions.yaml
+
+external_components:
+  - source: github://pr#10562
+    components: [mipi_dsi]
+    refresh: 1h
+
+  - source: github://alaltitov/esphome@main
+    components: [i18n]
+    refresh: 1h
+
+i18n:
+  id: i18n_translations
+  sources:
+    - translations/ru.yaml
+    - translations/en.yaml
+  default_locale: ru
+
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: false
+  platformio_options:
+    lib_deps:
+      - "bblanchon/ArduinoJson@^7.2.0"
+  includes:
+    - <sstream>
+    - <algorithm>
+    - <ArduinoJson.h>
+  on_boot:
+    - priority: 400
+      then:
+        - lambda: |-
+            id(i18n_translations).set_current_locale(id(current_language));
+        - script.execute: update_loading_page
+    - priority: -100
+      then:
+        - lvgl.roller.update:
+            id: backlight_settings_sleep_time_roller
+            selected_index: !lambda return id(display_timeout);
+
+esp32:
+  board: esp32-p4-evboard
+  flash_size: 32Mb
+  cpu_frequency: 400MHz
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: yes
+    # sdkconfig_options:
+    #   CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+    #   CONFIG_SPIRAM_RODATA: y
+
+
+logger:
+  level: debug
+  logs:
+    lvgl: info
+  hardware_uart: UART0
+
+# debug:
+
+psram:
+  speed: 200MHz
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+# ethernet:
+#   type: IP101
+#   mdc_pin: GPIO31
+#   mdio_pin: GPIO52
+#   clk: 
+#     pin: GPIO50
+#     mode: CLK_EXT_IN
+#   phy_addr: 1
+#   power_pin: GPIO51
+
+esp32_hosted:
+  active_high: true
+  variant: ESP32C6
+  reset_pin: GPIO54
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  on_connect:
+    - lvgl.label.update:
+        id: wifi_status
+        text_color: color_green
+  on_disconnect:
+    - lvgl.label.update:
+        id: wifi_status
+        text_color: color_steel_blue
+
+display:
+  - platform: mipi_dsi
+    model: WAVESHARE-P4-86-PANEL
+    reset_pin:
+      number: 27
+      inverted: false
+
+i2c:
+  sda: GPIO7
+  scl: GPIO8
+  scan: true
+  frequency: 400kHz
+  id: i2c_bus
+
+touchscreen:
+  platform: gt911
+  id: touchscreen_
+  # address: 0x14
+  on_release:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - logger.log: "LVGL resuming"
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: display_backlight
+
+output:
+  - platform: ledc
+    id: backlight_
+    pin: GPIO26
+    frequency: 100Hz
+    inverted: true
+    min_power: 0.0
+    max_power: 0.8 # To prevent overheating due to excessive lighting
+    
+light:
+  - platform: monochromatic
+    name: "Подсветка"
+    output: backlight_
+    id: display_backlight
+    restore_mode: ALWAYS_ON
+    on_turn_on:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - logger.log: "LVGL resuming by backlight on"
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+    on_turn_off:
+      - if:
+          condition:
+            lambda: 'return id(display_timeout_backlight).state >= 0;'
+          then:
+            - logger.log: "Backlight off, pausing LVGL"
+            - lvgl.pause:
+
+api:
+  encryption:
+    key: !secret waveshare_key
+
+ota:
+  - platform: esphome
+    id: ota_state
+    password: !secret waveshare_ota
+    on_begin: 
+      - logger.log: "OTA Start"
+      - light.turn_on: display_backlight
+      - lambda: "id(display_backlight).loop();"
+      - lvgl.resume:
+      - lvgl.widget.redraw:
+      - lvgl.label.update:
+          id: ota_label_primary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.start.primary");
+      - lvgl.label.update:
+          id: ota_label_secondary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.start.secondary");
+      - lvgl.widget.show: ota_widget
+      - lvgl.resume:
+      - lvgl.widget.redraw:
+      - lambda: "id(lvgl_component).loop();"
+      - lambda: "id(lvgl_component).loop();"
+      - logger.log: "OTA widget shown"
+
+    on_progress: 
+      - lvgl.bar.update:
+          id: ota_bar_value
+          value: !lambda return (int)x;
+      - lvgl.label.update:
+          id: ota_label_primary
+          text: " "
+      - lvgl.label.update:
+          id: ota_label_secondary
+          text: !lambda |-
+            static char buffer[64];
+            snprintf(buffer, sizeof(buffer), id(i18n_translations).translate("ota.progress").c_str(), x);
+            return buffer;
+      - lambda: "id(lvgl_component).loop();"
+
+    on_end:
+      - logger.log: "OTA End"
+      - lvgl.bar.update:
+          id: ota_bar_value
+          value: 100
+      - lvgl.label.update:
+          id: ota_label_primary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.end.primary");
+      - lvgl.label.update:
+          id: ota_label_secondary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.end.secondary");
+      - lambda: |-
+          id(lvgl_component).loop();
+
+    on_error:
+      - logger.log:
+            format: "OTA update error %d"
+            args: ["x"]
+      - lvgl.label.update:
+          id: ota_label_primary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.error.primary");
+      - lvgl.label.update:
+          id: ota_label_secondary
+          text: !lambda |-
+            return id(i18n_translations).translate("ota.error.secondary");
+      - lambda: |-
+          id(lvgl_component).loop();
+
+lvgl:
+  id: lvgl_component
+  buffer_size: 100%
+  byte_order: little_endian
+  touchscreens:
+    - touchscreen_id: touchscreen_
+      long_press_time: 5000ms
+      long_press_repeat_time: 400ms
+  page_wrap: false
+  top_layer:
+    widgets:
+      - obj:
+          id: ota_widget
+          hidden: true
+          width: 720
+          height: 720
+          align: center
+          clickable: false
+          bg_color: color_slate_blue_gray
+          border_opa: transp
+          shadow_opa: transp
+          radius: 0
+          widgets:
+            - label:
+                id: ota_label_primary
+                y: -75
+                align: center
+                text_font: nunito_20
+                text_color: color_misty_blue
+                text: "Starting OTA!"
+            - label:
+                id: ota_label_secondary
+                y: -30
+                align: center
+                text_font: nunito_18
+                text_color: color_misty_blue
+                text: "Wait..."
+            - bar:
+                id: ota_bar_value
+                y: 30
+                width: 450
+                value: 0
+                align: center
+                min_value: 0
+                max_value: 100
+                animated: true
+                bg_color: color_steel_blue
+                indicator:
+                  bg_color: color_misty_blue
+
+
+http_request:
+  verify_ssl: false
+
+
+

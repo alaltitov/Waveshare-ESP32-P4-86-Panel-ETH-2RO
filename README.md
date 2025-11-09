@@ -1,114 +1,98 @@
+# LVGL ESPhome Waveshare-ESP32-P4-86-Panel-ETH-2RO custom firmware
+
+<p align="center">
+ <img width="200px" src="/docs/images/loading.png">
+ <img width="200px" src="/docs/images/home.png">
+ <img width="200px" src="/docs/images/forecasts.png">
+ <img width="200px" src="/docs/images/info.png">
+ <img width="200px" src="/docs/images/settings.png">
+ <img width="200px" src="/docs/images/light0.png">
+ <img width="200px" src="/docs/images/light1.png">
+ <img width="200px" src="/docs/images/climate0.png">
+ <img width="200px" src="/docs/images/climate1.png">
+ <img width="200px" src="/docs/images/climate2.png">
+ <img width="200px" src="/docs/images/climate3.png">
+ <img width="200px" src="/docs/images/media_player.png">
+ <img width="200px" src="/docs/images/vacuum.png">
+</p>
+
 <p align="center">
     <img alt="Static Badge" src="https://img.shields.io/badge/made%20by-alaltitov-blue">
-    <img alt="Static Badge" src="https://img.shields.io/badge/version-v1.0%20Alpha-green">
-    <img alt="Static Badge" src="https://img.shields.io/badge/esphome min version-2025.7.2-red">
+    <img alt="Static Badge" src="https://img.shields.io/badge/version-v1.0%20Dev-green">
+    <img alt="Static Badge" src="https://img.shields.io/badge/esphome min version-2025.11.0-red">
     <img alt="Static Badge" src="https://img.shields.io/badge/license-MIT-orange">
 </p>
 
-# Waveshare ESP32-P4-86-Panel-ETH-2RO & ESPHome  
-*First Tests and Integration Guide*
+## Support the Project
 
----
+<img src="/docs/images/donate.png" alt="QR Code" width="150" align="left" hspace="10"/>
 
-## 🚀 Overview
+<div style="padding-top: 40px;">
+  <b>Support me on</b>
+  <div style="height: 30px;"></div>
+  <a href="https://boosty.to/altitov/donate">
+    <img src="/docs/images/boosty.png" alt="Boosty" width="160"/>
+  </a>
+</div>
 
-This project showcases the **first tests of the Waveshare ESP32-P4-86-Panel-ETH-2RO** running on [ESPHome](https://esphome.io/).  
-All core components are functional. You can experiment with [LVGL](https://esphome.io/components/lvgl/) and freely modify the configuration.
+<br clear="all"/>
 
-> **Tested on ESPHome version: `2025.7.2`**
+## Questions, Discussions, Ideas
 
----
+<div style="padding-top: 40px;">
+  <a href="https://t.me/esphome_lvgl_chats">
+    <img src="/docs/images/t_me_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
+  </a>
+</div>
+
+<br clear="all"/>
+
+## ⚠️ Important Notice
+- You'll need the DEV version of ESPHome 2025.11.0.
 
 ## ✨ Features
 
-- **Ethernet & WiFi support**  
-  *(Switch between them via configuration)*
-- **Voice Assistant Integration**  
-  *(Works with Home Assistant voice assistant – see video below)*
-- **Online Radio Playback**  
-  *(Russian radio station demo – see video below)*
-- **LVGL UI experiments**  
-  *(Open for your creativity!)*
+- Status indicators for Wi-Fi, Home Assistant API, thermostat, air conditioner, touchscreen lock, alarm panel
+- Weather icons with current conditions and temperature
+- Weather Forecasts daily and hourly
+- Date and time
+- Sensor readings from Home Assistant
+- Voice Assistant (testing...)
+- Lights control
+- Alarm Panels control
+- Climate control
+- Covers control
+- Fans control
+- Media Player control
+- Radio control (testing...)
+- Vacuum control
+- Settings:
+  * Backlight adjustment
+  * Screen timeout settings
+  * Language selection:
+    - ru (from [alaltitov](https://github.com/alaltitov))
+    - en (from [alaltitov](https://github.com/alaltitov))
+    - pl (from [reaper7](https://github.com/reaper7))
+    - fr (from [lboue](https://github.com/lboue))
+    - es (from Antonio)
+    - nl (from [zjean](https://github.com/zjean))
+    - si (from [Protoncek](https://github.com/Protoncek))
+    - it (from [echopage1964](https://github.com/echopage1964))
+    - de (from [MATZE-MAN](https://github.com/MATZE-MAN))
 
----
+## 📦 Installation
+> 📹 **Video [instruction](https://youtu.be/HYN_2hvcbes?si=JfYQH4vCuFlr8Q9r)**
 
-## ⚙️ Getting Started
+<img width="400px" src="/docs/images/ha_options.png">
 
-### 1. Hardware
+- You must enable the "Allow the device to perform Home Assistant actions." option in the ESPHome integration to Home Assistant to control devices.
+- Install custom component for forecasts and covers for media player from [here](https://github.com/alaltitov/homeassistant-display-tools).
+- Copy repository to vscode or to esphome folder of your Home Assistant. Change substitutions.yaml and config.yaml your entities in all widgets (only in substitution, in code everything will be substituted automatically).
 
-- [Waveshare ESP32-P4-86-Panel-ETH-2RO](https://www.waveshare.com/wiki/ESP32-P4-86-Panel-ETH-2RO)
+## 📖 Documentation
+- [ESPHome LVGL 8.4](https://esphome.io/components/lvgl/)
 
-### 2. ESPHome Configuration
+## 🤝 Thanks for your help
+- Thanks to [ZHNovell](https://github.com/ZHNovell) for financial support of the project, as well as for help with testing and ideas.
+- Thanks, [сlydebarrow](https://github.com/clydebarrow), [jesserockz](https://github.com/jesserockz), [ssieb](https://github.com/ssieb) for helping me with the project!
 
-- **WiFi or Ethernet:**  
-  - To use **WiFi**:  
-    - Uncomment `esp32_hosted` and `wifi` sections  
-    - Comment out the `ethernet` section
-  - To use **Ethernet**:  
-    - Uncomment the `ethernet` section  
-    - Comment out `esp32_hosted` and `wifi`
-
-> **Note:**  
-> ESP32-P4 support in ESPHome is still experimental. Bugs may occur!
-
-### 3. Flashing / Installation
-
-**Option 1:**  
-Copy the contents of this repository into the `esphome` folder of your Home Assistant installation.
-
-**Option 2:**  
-Clone this repository directly using Visual Studio Code (VSCode)
-
----
-
-## 🗣️ Voice Assistant
-
-- Integrates with Home Assistant’s voice assistant.
-- Requires additional configuration in Home Assistant for full functionality.
-
-**Demo Video:**  
-[![Voice Assistant Demo](https://img.youtube.com/vi/v7quMFinaK0/0.jpg)](https://youtube.com/shorts/v7quMFinaK0?si=J8VmZL8C5pM8W2Lc)
-
----
-
-## 📻 Online Radio
-
-- Plays a Russian online radio station.
-- Easily customizable for other streams.
-
-**Demo Video:**  
-[![Online Radio Demo](https://img.youtube.com/vi/_DiCLF-6ztk/0.jpg)](https://youtube.com/shorts/_DiCLF-6ztk?si=kzCkzMouhMckeV-K)
-
----
-
-## 🧪 LVGL UI Experiments
-
-- Feel free to experiment with LVGL widgets and layouts.
-- Contributions and creative ideas are welcome!
-
----
-
-## 📝 Notes
-
-- ESP32-P4 support is **experimental** in ESPHome.
-- Some features may be unstable or buggy.
-- Tested and working on ESPHome version `2025.7.2`.
-
----
-
-## 📬 Feedback & Contributions
-
-- Found a bug? Have an idea?  
-  Open an issue or submit a pull request!
-
----
-
-## 📚 Useful Links
-
-- [ESPHome Documentation](https://esphome.io/)
-- [Waveshare ESP32-P4-86-Panel-ETH-2RO](https://www.waveshare.com/wiki/ESP32-P4-86-Panel-ETH-2RO)
-- [LVGL Documentation](https://esphome.io/components/lvgl/)
-
----
-
-**Enjoy experimenting with your Waveshare ESP32-P4-86-Panel and ESPHome!**

@@ -1,0 +1,177 @@
+globals:
+  - id: ha_connected
+    type: bool
+    initial_value: 'false'
+
+lvgl:
+  top_layer:
+    widgets:
+      - obj:
+          id: loading_page
+          bg_color: color_slate_blue_gray
+          pad_all: 0
+          border_opa: transp
+          shadow_opa: transp
+          width: 720
+          height: 720
+          widgets:
+            - image:
+                y: 45
+                align: top_mid
+                src: ha_img
+
+            - obj:
+                id: boot_homeassistant
+                y: 270
+                width: 450
+                height: 150
+                pad_all: 0
+                align: top_mid
+                bg_opa: transp
+                shadow_opa: transp
+                border_opa: transp
+                border_width: 0
+                radius: 15
+                widgets:
+                  - label:
+                      id: boot_homeassistant_label
+                      align: left_mid
+                      text_font: nunito_30
+                      text_color: color_misty_blue
+                      text: " "
+                  - spinner:
+                      id: boot_homeassistant_spiner
+                      width: 75
+                      height: 75
+                      align: right_mid
+                      spin_time: 2s
+                      arc_length: 60deg
+                      arc_width: 8
+                      arc_color: color_steel_blue
+                      indicator:
+                        arc_color: color_misty_blue
+                        arc_width: 8
+            - obj:
+                id: boot_synchronization
+                y: 270
+                width: 450
+                height: 90
+                pad_all: 0
+                align: top_mid
+                bg_opa: transp
+                shadow_opa: transp
+                border_opa: transp
+                border_width: 0
+                radius: 15
+                hidden: true
+                widgets:
+                  - label:
+                      id: boot_synchronization_label
+                      align: top_mid
+                      y: 0
+                      text_font: nunito_30
+                      text_color: color_misty_blue
+                      text: " "
+
+                  - bar:
+                      id: boot_synchronization_bar
+                      y: 0
+                      width: 450
+                      value: 0
+                      align: bottom_mid
+                      min_value: 0
+                      max_value: 100
+                      animated: true
+                      bg_color: color_steel_blue
+                      indicator:
+                        bg_color: color_misty_blue
+            - image:
+                y: -45
+                align: bottom_mid
+                src: esphome_img
+
+
+script:
+
+  - id: update_loading_page
+    then:
+      - lvgl.label.update:
+          id: boot_synchronization_label
+          text: !lambda |-
+            return id(i18n_translations).translate("loading.synchronization");
+      - lvgl.label.update:
+          id: boot_homeassistant_label
+          text: !lambda |-
+            return id(i18n_translations).translate("loading.connection_api");
+
+  - id: check_boot_status
+    then:
+      - lambda: |-
+          if (id(ha_connected)) {
+            lv_obj_add_flag(id(boot_homeassistant), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(boot_synchronization), LV_OBJ_FLAG_HIDDEN);
+
+            id(start_sync_animation).execute();
+          }
+
+  - id: start_sync_animation
+    then:
+      - delay: 1s
+      - lvgl.bar.update:
+          id: boot_synchronization_bar
+          value: 25
+
+      - delay: 1s
+      - lvgl.bar.update:
+          id: boot_synchronization_bar
+          value: 50
+
+      - delay: 1s
+      - lvgl.bar.update:
+          id: boot_synchronization_bar
+          value: 75
+
+      - delay: 1s
+      - lvgl.bar.update:
+          id: boot_synchronization_bar
+          value: 100
+
+      - delay: 500ms
+
+      - lvgl.widget.hide: loading_page
+
+
+  - id: on_ha_connected
+    then:
+      - lambda: |-
+          if (!id(ha_connected)) {
+            id(ha_connected) = true;
+            lv_label_set_text(id(boot_homeassistant_label), "Home Assistant Connected!");
+            lv_obj_add_flag(id(boot_homeassistant_spiner), LV_OBJ_FLAG_HIDDEN);
+            id(check_boot_status).execute();
+          }
+
+api:
+  on_client_connected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - script.execute: update_loading_page
+          - lvgl.label.update: 
+              id: ha_status
+              text_color: color_blue
+          - script.execute: on_ha_connected
+
+
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - globals.set:
+              id: ha_connected
+              value: 'false'
+          - lvgl.label.update: 
+              id: ha_status
+              text_color: color_steel_blue

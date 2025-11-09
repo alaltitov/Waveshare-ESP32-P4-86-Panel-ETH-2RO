@@ -1,0 +1,638 @@
+packages:
+  animations: !include animations.yaml
+
+substitutions: !include substitutions.yaml
+
+sensor:
+  # Battery level
+  - platform: homeassistant
+    id: vacuum_battery_level_sensor
+    entity_id: "${battery_level_entity}"
+    on_value: 
+      - lvgl.label.update:
+          id: vacuum_battery_level_label
+          text: !lambda |-
+            if (isnan(x)) return " ";
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "%.0f%%", x);
+            return std::string(buffer);
+
+      - if:
+          condition:
+            lambda: return x == 100;
+          then:
+            - script.execute: vacuum_stop_all_animations
+
+  # Cleaned area
+  - platform: homeassistant
+    id: vacuum_cleaned_area_sensor
+    entity_id: "${cleaned_area_entity}"
+    on_value: 
+      - lvgl.label.update:
+          id: vacuum_cleaned_area_label
+          text: !lambda |-
+            if (isnan(x)) return " ";
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "%.0f m²", x);
+            return std::string(buffer);
+
+text_sensor:
+
+  - platform: homeassistant
+    id: vacuum_name_sensor
+    entity_id: "${vacuum_entity}"
+    attribute: friendly_name
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: vacuum_name_label
+            text: !lambda return x;
+
+  - platform: homeassistant
+    id: vacuum_state_sensor
+    entity_id: "${vacuum_entity}"
+    on_value:
+      then:
+        - script.execute: update_vacuum_translations
+        # ═══════════════════════════════════════════════════════════════════
+        # ОСТАНОВКА ВСЕХ АНИМАЦИЙ ПЕРЕД СМЕНОЙ СОСТОЯНИЯ
+        # ═══════════════════════════════════════════════════════════════════
+        - script.execute: vacuum_stop_all_animations
+
+        # ═══════════════════════════════════════════════════════════════════
+        # СОСТОЯНИЕ: CLEANING (уборка) - вращение
+        # ═══════════════════════════════════════════════════════════════════
+        - if:
+            condition:
+              lambda: 'return x == "cleaning";'
+            then:
+              - script.execute: vacuum_start_cleaning_animation
+              - lvgl.label.update:
+                  id: vacuum_play_pause_icon
+                  text: "${pause_icon}"
+            else:
+              - lvgl.label.update:
+                  id: vacuum_play_pause_icon
+                  text: "${play_icon}"
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # СОСТОЯНИЕ: RETURNING (возврат на базу) - покачивание
+        # ═══════════════════════════════════════════════════════════════════
+        - if:
+            condition:
+              lambda: 'return x == "returning";'
+            then:
+              - script.execute: vacuum_start_go_home_animation
+
+        # ═══════════════════════════════════════════════════════════════════
+        # СОСТОЯНИЕ: DOCKED (на базе)
+        # ═══════════════════════════════════════════════════════════════════
+        - if:
+            condition:
+              lambda: 'return x == "docked";'
+            then:
+              - if:
+                  condition:
+                    lambda: 'return id(vacuum_battery_level_sensor).state < 100;'
+                  then:
+                    # Зарядка - пульсация
+                    - script.execute: vacuum_start_charging_animation
+
+
+        # ═══════════════════════════════════════════════════════════════════
+        # СОСТОЯНИЕ: PAUSED, IDLE и др. - статичное изображение
+        # ═══════════════════════════════════════════════════════════════════
+        - if:
+            condition:
+              lambda: 'return (x == "paused" || x == "idle");'
+            then:
+              - script.execute: vacuum_start_paused_animation
+
+
+lvgl:
+  pages:
+    - id: vacuum_page
+      bg_color: color_black
+      widgets:
+
+        - obj:
+            y: 30
+            width: 660
+            height: 353
+            align: top_mid
+            radius: 30
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+
+              - image:
+                  id: vacuum_state_image
+                  y: -15
+                  align: center
+                  src: vacuum_img
+
+              - label:
+                  id: vacuum_sleep_icon
+                  hidden: true
+                  x: 120
+                  y: -120
+                  align: center
+                  text_font: mdi_icons_78
+                  text_color: color_white
+                  text: "${sleep_icon}"
+
+
+              # battery_level
+              - obj:
+                  x: 15
+                  radius: 15
+                  width: 120
+                  height: 60
+                  align: left_mid
+                  bg_color: color_slate_blue_gray
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_color: color_black
+                  shadow_spread: 2
+                  shadow_width: 9
+                  widgets:
+                    - label: 
+                        id: vacuum_battery_level_label
+                        align: center
+                        text_font: nunito_28
+                        text_color: color_misty_blue
+                        text: "100%"
+
+              # cleaned area
+              - obj:
+                  x: -15
+                  radius: 15
+                  width: 120
+                  height: 60
+                  align: right_mid
+                  bg_color: color_slate_blue_gray
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_color: color_black
+                  shadow_spread: 3
+                  shadow_width: 12
+                  widgets:
+                    - label: 
+                        id: vacuum_cleaned_area_label
+                        align: center
+                        text_font: nunito_28
+                        text_color: color_misty_blue
+                        text: "0 m²"
+
+              - label: 
+                  id: vacuum_state_label
+                  y: -23
+                  align: bottom_mid
+                  text_font: nunito_30
+                  text_color: color_steel_blue
+                  text: "State"
+
+
+        - obj:
+            id: vacuum_controls_background
+            y: 398
+            width: 660
+            height: 150
+            align: top_mid
+            clickable: false
+            scrollable: false
+            radius: 30
+            pad_all: 0
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              # STOP BUTTON
+              - obj:
+                  x: 173
+                  width: 105
+                  height: 105
+                  align: center
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  widgets:
+                    - button:
+                        id: vacuum_stop_btn
+                        width: 75
+                        height: 75
+                        align: center
+                        clickable: true
+                        radius: 75
+                        pad_all: 0
+                        bg_opa: transp
+                        border_opa: transp
+                        border_width: 0
+                        shadow_width: 12
+                        shadow_spread: 3
+                        shadow_ofs_y: 0
+                        shadow_color: color_black
+                        shadow_opa: cover
+                        pressed:
+                          bg_color: color_steel_blue
+                          shadow_width: 6
+                        on_click:
+                          - homeassistant.action:
+                              action: vacuum.stop
+                              data:
+                                entity_id: "${vacuum_entity}"
+
+
+                    - obj:
+                        width: 60
+                        height: 60
+                        align: center
+                        clickable: false
+                        radius: 68
+                        pad_all: 0
+                        bg_opa: transp 
+                        border_opa: transp
+                        shadow_width: 6
+                        shadow_color: 0xFFFFFF
+                        shadow_ofs_x: -6
+                        shadow_ofs_y: -3
+                        shadow_opa: 30%
+
+                    - obj:
+                        width: 68
+                        height: 68
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_color: color_slate_blue_gray
+                        widgets:
+                          - label:
+                              id: vacuum_stop_icon
+                              align: center
+                              text_font: mdi_icons_42
+                              text_color: color_misty_blue
+                              text: "${stop_icon}"
+
+
+              # RETURN TO BASE BUTTON
+              - obj:
+                  x: -173
+                  width: 105
+                  height: 105
+                  align: center
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  widgets:
+                    - button:
+                        id: vacuum_returning_btn
+                        width: 75
+                        height: 75
+                        align: center
+                        clickable: true
+                        radius: 75
+                        pad_all: 0
+                        bg_opa: transp
+                        border_opa: transp
+                        border_width: 0
+                        shadow_width: 12
+                        shadow_spread: 3
+                        shadow_ofs_y: 0
+                        shadow_color: color_black
+                        shadow_opa: cover
+                        pressed:
+                          bg_color: color_steel_blue
+                          shadow_width: 6
+                        on_click:
+                          - homeassistant.action:
+                              action: vacuum.return_to_base
+                              data:
+                                entity_id: "${vacuum_entity}"
+
+
+                    - obj:
+                        width: 60
+                        height: 60
+                        align: center
+                        clickable: false
+                        radius: 68
+                        pad_all: 0
+                        bg_opa: transp 
+                        border_opa: transp
+                        shadow_width: 6
+                        shadow_color: 0xFFFFFF
+                        shadow_ofs_x: -6
+                        shadow_ofs_y: -3
+                        shadow_opa: 30%
+
+                    - obj:
+                        width: 68
+                        height: 68
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_color: color_slate_blue_gray
+                        widgets:
+                          - label:
+                              id: vacuum_returning_icon
+                              align: center
+                              text_font: mdi_icons_42
+                              text_color: color_misty_blue
+                              text: "${return_to_base_icon}"
+
+
+              # LOCATE BUTTON
+              - obj:
+                  x: -270
+                  width: 105
+                  height: 105
+                  align: center
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  widgets:
+                    - button:
+                        id: vacuum_locate_btn
+                        width: 75
+                        height: 75
+                        align: center
+                        clickable: true
+                        radius: 75
+                        pad_all: 0
+                        bg_opa: transp
+                        border_opa: transp
+                        border_width: 0
+                        shadow_width: 12
+                        shadow_spread: 3
+                        shadow_ofs_y: 0
+                        shadow_color: color_black
+                        shadow_opa: cover
+                        pressed:
+                          bg_color: color_steel_blue
+                          shadow_width: 6
+                        on_click:
+                          - homeassistant.action:
+                              action: vacuum.locate
+                              data:
+                                entity_id: "${vacuum_entity}"
+
+
+                    - obj:
+                        width: 60
+                        height: 60
+                        align: center
+                        clickable: false
+                        radius: 68
+                        pad_all: 0
+                        bg_opa: transp 
+                        border_opa: transp
+                        shadow_width: 6
+                        shadow_color: 0xFFFFFF
+                        shadow_ofs_x: -6
+                        shadow_ofs_y: -3
+                        shadow_opa: 30%
+
+                    - obj:
+                        width: 68
+                        height: 68
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_color: color_slate_blue_gray
+                        widgets:
+                          - label:
+                              id: vacuum_locate_icon
+                              align: center
+                              text_font: mdi_icons_42
+                              text_color: color_misty_blue
+                              text: "${locate_map_icon}"
+
+
+              # CLEAN SPOT BUTTON
+              - obj:
+                  x: 270
+                  width: 105
+                  height: 105
+                  align: center
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  widgets:
+                    - button:
+                        id: vacuum_clean_spot_btn
+                        width: 75
+                        height: 75
+                        align: center
+                        clickable: true
+                        radius: 75
+                        pad_all: 0
+                        bg_opa: transp
+                        border_opa: transp
+                        border_width: 0
+                        shadow_width: 12
+                        shadow_spread: 3
+                        shadow_ofs_y: 0
+                        shadow_color: color_black
+                        shadow_opa: cover
+                        pressed:
+                          bg_color: color_steel_blue
+                          shadow_width: 6
+                        on_click:
+                          - homeassistant.action:
+                              action: vacuum.clean_spot
+                              data:
+                                entity_id: "${vacuum_entity}"
+
+
+                    - obj:
+                        width: 60
+                        height: 60
+                        align: center
+                        clickable: false
+                        radius: 68
+                        pad_all: 0
+                        bg_opa: transp 
+                        border_opa: transp
+                        shadow_width: 6
+                        shadow_color: 0xFFFFFF
+                        shadow_ofs_x: -6
+                        shadow_ofs_y: -3
+                        shadow_opa: 30%
+
+                    - obj:
+                        width: 68
+                        height: 68
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_color: color_slate_blue_gray
+                        widgets:
+                          - label:
+                              id: vacuum_clean_spot_icon
+                              align: center
+                              text_font: mdi_icons_42
+                              text_color: color_misty_blue
+                              text: "${clean_spot_icon}"
+
+
+        - obj:
+            id: vacuum_name_background
+            y: 563
+            width: 660
+            height: 90
+            align: top_mid
+            clickable: false
+            scrollable: false
+            radius: 30
+            pad_all: 0
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              - label:
+                  id: vacuum_name_label
+                  align: center
+                  text_font: nunito_28
+                  text_color: color_steel_blue
+                  text: "Vacuum"
+
+        # PLAY/PAUSE BUTTON
+        - obj:
+            id: vacuum_play_pause_background
+            y: 113
+            width: 225
+            height: 225
+            align: center
+            clickable: false
+            radius: 113
+            pad_all: 0
+            bg_color: color_black
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              - obj:
+                  width: 150
+                  height: 150
+                  pad_all: 0
+                  align: center
+                  clickable: false
+                  radius: 75
+                  border_opa: transp
+                  bg_color: color_slate_blue_gray
+
+              - obj:
+                  id: vacuum_play_pause_main
+                  width: 225
+                  height: 225
+                  align: center
+                  clickable: false
+                  radius: 113
+                  pad_all: 0
+                  bg_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  widgets:
+                    - arc:
+                        id: vacuum_play_pause_arc
+                        clickable: false
+                        adjustable: false
+                        adv_hittest: false
+                        align: center
+                        width: 195
+                        height: 195
+                        start_angle: 0
+                        end_angle: 360
+                        arc_width: 8
+                        arc_color: color_green
+                        arc_rounded: false
+
+                    - obj:
+                        width: 150
+                        height: 150
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_opa: transp
+                        widgets:
+                          - label:
+                              id: vacuum_play_pause_icon
+                              align: center
+                              text_font: mdi_icons_78
+                              text_color: color_misty_blue
+                              text: "${play_icon}"
+                        on_click:
+                          - if:
+                              condition:
+                                lambda: 'return id(vacuum_state_sensor).state == "cleaning";'
+                              then:
+                                - homeassistant.action:
+                                    action: vacuum.pause
+                                    data:
+                                      entity_id: "${vacuum_entity}"
+                              else:
+                                - homeassistant.action:
+                                    action: vacuum.start
+                                    data:
+                                      entity_id: "${vacuum_entity}"
+
+
+        # BACK
+        - obj:
+            y: 0
+            width: 120
+            height: 75
+            align: bottom_mid
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 0
+            widgets:
+              - obj:
+                  y: -30
+                  width: 120
+                  height: 8
+                  align: bottom_mid
+                  bg_color: color_steel_blue
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 23 
+            on_click:
+              - lvgl.page.show: home_page
+
+
+script:
+
+  - id: update_vacuum_translations
+    then:
+      - lvgl.label.update:
+          id: vacuum_state_label
+          text: !lambda |-
+            return id(i18n_translations).translate(("vacuum.state." + id(vacuum_state_sensor).state));
+
+

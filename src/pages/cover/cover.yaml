@@ -1,0 +1,483 @@
+sensor:  
+  # Cover Current Position 
+  - platform: homeassistant
+    id: ${widget_name}_current_pos_sensor
+    entity_id: "${cover_entity}"
+    attribute: current_position
+    on_value:
+      - if:
+          condition:
+            lambda: return id(${widget_name}_current_pos_sensor).has_state();
+          then:
+            - lvgl.label.update:
+                id: ${widget_name}_cover_state_label
+                y: -8
+
+            - lvgl.arc.update:
+                id: ${widget_name}_cover_position_arc
+                value: !lambda return int(x);
+                clickable: true
+                indicator:
+                  arc_color: color_red
+
+            - lvgl.label.update:
+                id: ${widget_name}_cover_pos_label
+                text: !lambda |-
+                  static char buf[8];
+                  snprintf(buf, sizeof(buf), "%.0f%%", x);
+                  return buf;
+
+
+text_sensor:
+  # Cover Name
+  - platform: homeassistant
+    id: ${widget_name}_name_sensor
+    entity_id: "${cover_entity}"
+    attribute: friendly_name
+    on_value:
+      - lvgl.label.update:
+          id: ${widget_name}_cover_name_label
+          text: !lambda return x;
+
+        
+  # Cover State
+  - platform: homeassistant
+    id: ${widget_name}_state_sensor
+    entity_id: "${cover_entity}"
+    on_value:
+      - script.execute: ${widget_name}_update_cover_translations
+      - if:
+          condition:
+            lambda: 'return x == "open" || x == "opening";'
+          then:
+            - lvgl.label.update:
+                id: ${widget_name}_cover_icon
+                text: "${cover_icon_open}"
+            - lvgl.obj.update:
+                id: ${widget_name}_cover_icon_bg
+                bg_color: color_red
+            - lvgl.label.update:
+                id: ${widget_name}_cover_icon
+                text_color: color_red
+          else:
+            - lvgl.label.update:
+                id: ${widget_name}_cover_icon
+                text: "${cover_icon_close}"
+            - lvgl.obj.update:
+                id: ${widget_name}_cover_icon_bg
+                bg_color: color_misty_blue
+            - lvgl.label.update:
+                id: ${widget_name}_cover_icon
+                text_color: color_misty_blue
+
+
+
+lvgl:
+
+  pages:
+    - id: ${widget_name}_cover_page
+      bg_color: color_black
+      scrollable: false
+      widgets:
+        - label:
+            id: ${widget_name}_cover_name_label
+            y: 23
+            align: top_mid
+            text_font: nunito_30
+            text_color: color_misty_blue
+            text: "My Cover"
+        - obj:
+            id: ${widget_name}_cover_widget_background
+            hidden: false
+            y: 90
+            width: 660
+            height: 240
+            align: top_mid
+            clickable: false
+            scrollable: false
+            radius: 30
+            pad_all: 0
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              # ICON
+              - obj:
+                  id: ${widget_name}_cover_icon_bg
+                  y: 18
+                  width: 105
+                  height: 105
+                  align: top_mid
+                  bg_color: color_misty_blue
+                  bg_opa: 20%
+                  border_opa: transp
+                  shadow_opa: transp
+                  radius: 90
+                  widgets:
+                    - label:
+                        id: ${widget_name}_cover_icon
+                        align: center
+                        text_font: mdi_icons_60
+                        text_color: color_misty_blue
+                        text: " "
+
+              # STATE/POSITION INFO
+              - obj:
+                  y: 30
+                  width: 600
+                  height: 105
+                  align: center
+                  pad_all: 0
+                  bg_color: color_steel_blue
+                  bg_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 15
+                  widgets:
+                    - label:
+                        id: ${widget_name}_cover_state_label
+                        height: 38
+                        width: 600
+                        long_mode: DOT
+                        align: center
+                        text_align: center
+                        text_color: color_misty_blue
+                        text_font: nunito_30
+                        text: "Open"
+                    - label:
+                        id: ${widget_name}_cover_pos_label
+                        y: 30
+                        height: 38
+                        width: 600
+                        align: center
+                        text_align: center
+                        text_color: color_misty_blue
+                        text_font: nunito_24
+                        text: " "
+
+
+        # CONTROL BUTTONS
+        - obj:
+            id: ${widget_name}_cover_controls_background
+            y: 345
+            width: 660
+            height: 150
+            align: top_mid
+            clickable: false
+            scrollable: false
+            radius: 30
+            pad_all: 0
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              - obj:
+                  width: 660
+                  height: 150
+                  align: center
+                  clickable: false
+                  scrollable: false
+                  radius: 30
+                  pad_all: 0
+                  bg_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  widgets:
+                    # OPEN BUTTON
+                    - obj:
+                        x: 45
+                        width: 135
+                        height: 135
+                        align: left_mid
+                        pad_all: 0
+                        bg_opa: transp
+                        shadow_opa: transp
+                        border_opa: transp
+                        widgets:
+                          - button:
+                              width: 105
+                              height: 105
+                              align: center
+                              clickable: true
+                              radius: 75
+                              pad_all: 0
+                              bg_opa: transp
+                              border_opa: transp
+                              border_width: 0
+                              shadow_width: 12
+                              shadow_spread: 3
+                              shadow_ofs_y: 0
+                              shadow_color: color_black
+                              shadow_opa: cover
+                              pressed:
+                                bg_color: color_steel_blue
+                                shadow_width: 6
+                              on_press:
+                                - homeassistant.action:
+                                    action: cover.open_cover
+                                    data:
+                                      entity_id: "${cover_entity}"
+
+                          - obj:
+                              width: 90
+                              height: 90
+                              align: center
+                              clickable: false
+                              radius: 68
+                              pad_all: 0
+                              bg_opa: transp 
+                              border_opa: transp
+                              shadow_width: 6
+                              shadow_color: 0xFFFFFF
+                              shadow_ofs_x: -6
+                              shadow_ofs_y: -3
+                              shadow_opa: 30%
+
+                          - obj:
+                              width: 98
+                              height: 98
+                              pad_all: 0
+                              align: center
+                              clickable: false
+                              radius: 75
+                              border_opa: transp
+                              bg_color: color_slate_blue_gray
+                              widgets:
+                                - label:
+                                    align: center
+                                    text_font: mdi_icons_60
+                                    text_color: color_misty_blue
+                                    text: "${arrow_up_icon}"
+
+                    # CLOSE BUTTON
+                    - obj:
+                        x: -45
+                        width: 135
+                        height: 135
+                        align: right_mid
+                        pad_all: 0
+                        bg_opa: transp
+                        shadow_opa: transp
+                        border_opa: transp
+                        widgets:
+                          - button:
+                              width: 105
+                              height: 105
+                              align: center
+                              clickable: true
+                              radius: 75
+                              pad_all: 0
+                              bg_opa: transp
+                              border_opa: transp
+                              border_width: 0
+                              shadow_width: 12
+                              shadow_spread: 3
+                              shadow_ofs_y: 0
+                              shadow_color: color_black
+                              shadow_opa: cover
+                              pressed:
+                                bg_color: color_steel_blue
+                                shadow_width: 6
+                              on_press:
+                                - homeassistant.action:
+                                    action: cover.close_cover
+                                    data:
+                                      entity_id: "${cover_entity}"
+
+                          - obj:
+                              width: 90
+                              height: 90
+                              align: center
+                              clickable: false
+                              radius: 68
+                              pad_all: 0
+                              bg_opa: transp 
+                              border_opa: transp
+                              shadow_width: 6
+                              shadow_color: 0xFFFFFF
+                              shadow_ofs_x: -6
+                              shadow_ofs_y: -3
+                              shadow_opa: 30%
+
+                          - obj:
+                              width: 98
+                              height: 98
+                              pad_all: 0
+                              align: center
+                              clickable: false
+                              radius: 75
+                              border_opa: transp
+                              bg_color: color_slate_blue_gray
+                              widgets:
+                                - label:
+                                    align: center
+                                    text_font: mdi_icons_60
+                                    text_color: color_misty_blue
+                                    text: "${arrow_down_icon}"
+
+        # FOOTER COVER BACKGROUND
+        - obj:
+            y: 510
+            width: 660
+            height: 120
+            align: top_mid
+            clickable: false
+            scrollable: false
+            radius: 30
+            pad_all: 0
+            bg_color: color_slate_blue_gray
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+
+
+        # CIRCLE
+        - obj:
+            id: ${widget_name}_cover_circle_background
+            y: 60
+            width: 225
+            height: 225
+            align: center
+            clickable: false
+            radius: 113
+            pad_all: 0
+            bg_color: color_black
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+              - obj:
+                  width: 150
+                  height: 150
+                  pad_all: 0
+                  align: center
+                  clickable: false
+                  radius: 75
+                  border_opa: transp
+                  bg_color: color_slate_blue_gray
+
+
+              - obj:
+                  width: 225
+                  height: 225
+                  align: center
+                  clickable: false
+                  radius: 113
+                  pad_all: 0
+                  bg_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  widgets:
+                    - arc:
+                        clickable: false
+                        adjustable: false
+                        adv_hittest: false
+                        align: center
+                        width: 195
+                        height: 195
+                        min_value: 0
+                        max_value: 100
+                        start_angle: 0
+                        end_angle: 360
+                        rotation: 0
+                        arc_width: 8
+                        arc_color: color_steel_blue
+                        arc_rounded: false
+                        indicator:
+                          arc_width: 8
+                          arc_opa: transp
+                        knob:
+                          bg_opa: transp
+                    - arc:
+                        id: ${widget_name}_cover_position_arc
+                        clickable: false
+                        adjustable: true
+                        adv_hittest: true
+                        align: center
+                        width: 195
+                        height: 195
+                        min_value: 0
+                        max_value: 100
+                        start_angle: 0
+                        end_angle: 270
+                        rotation: 135
+                        arc_width: 8
+                        arc_color: color_steel_blue
+                        arc_rounded: false
+                        indicator:
+                          arc_width: 8
+                          arc_color: color_steel_blue
+                        knob:
+                          bg_opa: transp
+
+                        on_release:
+                          - homeassistant.action:
+                              action: cover.set_cover_position
+                              data:
+                                entity_id: "${cover_entity}"
+                                position: !lambda return int(x);
+
+                    - obj:
+                        width: 150
+                        height: 150
+                        pad_all: 0
+                        align: center
+                        clickable: false
+                        radius: 75
+                        border_opa: transp
+                        bg_opa: transp
+                        widgets:
+                          - label:
+                              id: ${widget_name}_cover_stop_icon
+                              align: CENTER
+                              text_color: color_misty_blue
+                              text_font: mdi_icons_78
+                              text: "${stop_icon}"
+                              on_press:
+                                - homeassistant.action:
+                                    action: cover.stop_cover
+                                    data:
+                                      entity_id: "${cover_entity}"
+
+        # back
+        - obj:
+            y: 0
+            width: 120
+            height: 105
+            align: bottom_mid
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 0
+            widgets:
+              - obj:
+                  y: -30
+                  width: 120
+                  height: 8
+                  align: bottom_mid
+                  bg_color: color_steel_blue
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 23 
+            on_click:
+              - lvgl.widget.hide: cover_select_widget
+              - lvgl.page.show: home_page
+
+
+script:
+
+  - id: ${widget_name}_update_cover_translations
+    then:
+      - lvgl.label.update:
+          id: ${widget_name}_cover_state_label
+          text: !lambda |-
+            return id(i18n_translations).translate(("cover.state." + id(${widget_name}_state_sensor).state));

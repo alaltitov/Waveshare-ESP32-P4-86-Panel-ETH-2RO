@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://t.me/esphome_lvgl_chats/5
+    about: For questions, suggestions, and general discussions
+  - name: 💬 Вопросы и Обсуждения
+    url: https://t.me/esphome_lvgl_chats/10
+    about: Для вопросов, предложений и общих обсуждений
+  - name: 💡 Ideas / Идеи
+    url: https://t.me/esphome_lvgl_chats/74
+    about: Suggest new features or improvements / Предложить новые функции или улучшения

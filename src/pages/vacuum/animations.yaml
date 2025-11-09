@@ -1,0 +1,274 @@
+script:  
+  
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Остановка всех анимаций и сброс в исходное состояние
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: vacuum_stop_all_animations
+    then:
+      - lambda: |-
+          lv_obj_t* img = id(vacuum_state_image);
+          lv_obj_t* sleep_icon = id(vacuum_sleep_icon);
+          
+          // ═══════════════════════════════════════════════════════════════
+          // Останавливаем ВСЕ анимации
+          // ═══════════════════════════════════════════════════════════════
+          lv_anim_del(img, nullptr);
+          lv_anim_del(sleep_icon, nullptr);
+          
+          // ═══════════════════════════════════════════════════════════════
+          // Сбрасываем трансформации изображения пылесоса
+          // ═══════════════════════════════════════════════════════════════
+          lv_img_set_angle(img, 0);                           // Угол → 0°
+          lv_img_set_zoom(img, 256);                          // Масштаб → 100%
+          lv_obj_set_style_img_opa(img, 255, 0);              // Прозрачность → 100%
+          
+          // ═══════════════════════════════════════════════════════════════
+          // Возвращаем позицию в исходное состояние (из YAML)
+          // ═══════════════════════════════════════════════════════════════
+          lv_obj_set_x(img, 0);                               // X → 0 (center)
+          lv_obj_set_y(img, -15);                             // Y → -15 (из YAML)
+          
+          // ═══════════════════════════════════════════════════════════════
+          // Скрываем иконку сна
+          // ═══════════════════════════════════════════════════════════════
+          lv_obj_add_flag(sleep_icon, LV_OBJ_FLAG_HIDDEN);
+          
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Анимация уборки (поворот → движение → пауза)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: vacuum_start_cleaning_animation
+    then:
+      - lambda: |-
+          // #include <cmath>
+          
+          ESP_LOGD("vacuum", "Starting cleaning animation (6s cycle with pauses)");
+          
+          lv_obj_t* img = id(vacuum_state_image);
+          lv_anim_del(img, nullptr);
+          
+          // ═══════════════════════════════════════════════════════════════
+          // КОМБИНИРОВАННАЯ АНИМАЦИЯ: поворот + движение + паузы
+          // ═══════════════════════════════════════════════════════════════
+          static lv_anim_t anim_cleaning;
+          lv_anim_init(&anim_cleaning);
+          lv_anim_set_var(&anim_cleaning, img);
+          lv_anim_set_time(&anim_cleaning, 6000);  // 6 секунд полный цикл
+          lv_anim_set_repeat_count(&anim_cleaning, LV_ANIM_REPEAT_INFINITE);
+          
+          lv_anim_set_exec_cb(&anim_cleaning, [](void * var, int32_t v) {
+            lv_obj_t* obj = (lv_obj_t*)var;
+            
+            float angle_deg = 0;
+            float distance = 0;
+            
+            // ═══════════════════════════════════════════════════════════════
+            // ФАЗА 1: 0-1500ms (0° → 20° → движение → пауза)
+            // ═══════════════════════════════════════════════════════════════
+            if (v < 1500) {
+              if (v < 500) {
+                // 0-500ms: Поворот 0° → 20°
+                angle_deg = (v / 500.0f) * 20.0f;
+                distance = 0;
+              } else if (v < 1000) {
+                // 500-1000ms: Движение вперёд-назад на 20°
+                angle_deg = 20.0f;
+                int progress = v - 500;
+                if (progress < 250) {
+                  distance = (progress / 250.0f) * 45.0f;  // 0 → 45 (было 30)
+                } else {
+                  distance = 45.0f - ((progress - 250) / 250.0f) * 45.0f;  // 45 → 0
+                }
+              } else {
+                // 1000-1500ms: ПАУЗА
+                angle_deg = 20.0f;
+                distance = 0;
+              }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // ФАЗА 2: 1500-3000ms (20° → 0° → движение → пауза)
+            // ═══════════════════════════════════════════════════════════════
+            else if (v < 3000) {
+              int phase_time = v - 1500;
+              if (phase_time < 500) {
+                // 1500-2000ms: Поворот 20° → 0°
+                angle_deg = 20.0f - (phase_time / 500.0f) * 20.0f;
+                distance = 0;
+              } else if (phase_time < 1000) {
+                // 2000-2500ms: Движение вперёд-назад на 0°
+                angle_deg = 0.0f;
+                int progress = phase_time - 500;
+                if (progress < 250) {
+                  distance = (progress / 250.0f) * 45.0f;
+                } else {
+                  distance = 45.0f - ((progress - 250) / 250.0f) * 45.0f;
+                }
+              } else {
+                // 2500-3000ms: ПАУЗА
+                angle_deg = 0.0f;
+                distance = 0;
+              }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // ФАЗА 3: 3000-4500ms (0° → -20° → движение → пауза)
+            // ═══════════════════════════════════════════════════════════════
+            else if (v < 4500) {
+              int phase_time = v - 3000;
+              if (phase_time < 500) {
+                // 3000-3500ms: Поворот 0° → -20° (340°)
+                angle_deg = -(phase_time / 500.0f) * 20.0f;
+                distance = 0;
+              } else if (phase_time < 1000) {
+                // 3500-4000ms: Движение вперёд-назад на -20°
+                angle_deg = -20.0f;
+                int progress = phase_time - 500;
+                if (progress < 250) {
+                  distance = (progress / 250.0f) * 45.0f;
+                } else {
+                  distance = 45.0f - ((progress - 250) / 250.0f) * 45.0f;
+                }
+              } else {
+                // 4000-4500ms: ПАУЗА
+                angle_deg = -20.0f;
+                distance = 0;
+              }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // ФАЗА 4: 4500-6000ms (-20° → 0° → движение → пауза)
+            // ═══════════════════════════════════════════════════════════════
+            else {
+              int phase_time = v - 4500;
+              if (phase_time < 500) {
+                // 4500-5000ms: Поворот -20° → 0°
+                angle_deg = -20.0f + (phase_time / 500.0f) * 20.0f;
+                distance = 0;
+              } else if (phase_time < 1000) {
+                // 5000-5500ms: Движение вперёд-назад на 0°
+                angle_deg = 0.0f;
+                int progress = phase_time - 500;
+                if (progress < 250) {
+                  distance = (progress / 250.0f) * 45.0f;
+                } else {
+                  distance = 45.0f - ((progress - 250) / 250.0f) * 45.0f;
+                }
+              } else {
+                // 5500-6000ms: ПАУЗА
+                angle_deg = 0.0f;
+                distance = 0;
+              }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // Применяем угол и позицию через тригонометрию
+            // ═══════════════════════════════════════════════════════════════
+            int16_t angle_lvgl = (int16_t)(angle_deg * 10.0f);
+            lv_img_set_angle(obj, angle_lvgl);
+            
+            float angle_rad = angle_deg * M_PI / 180.0f;
+            int16_t offset_x = (int16_t)(distance * sin(angle_rad));
+            int16_t offset_y = (int16_t)(-distance * cos(angle_rad)) - 15;
+            
+            lv_obj_set_x(obj, offset_x);
+            lv_obj_set_y(obj, offset_y);
+          });
+          
+          lv_anim_set_values(&anim_cleaning, 0, 6000);
+          lv_anim_set_path_cb(&anim_cleaning, lv_anim_path_linear);
+          lv_anim_start(&anim_cleaning);
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Анимация паузы (пульсирующая иконка сна)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: vacuum_start_paused_animation
+    then:
+      - lambda: |-
+          ESP_LOGD("vacuum", "Starting paused animation (pulsing sleep icon)");
+          
+          lv_obj_t* img = id(vacuum_state_image);
+          lv_obj_t* sleep_icon = id(vacuum_sleep_icon);
+          
+          // Останавливаем все анимации
+          lv_anim_del(img, nullptr);
+          lv_anim_del(sleep_icon, nullptr);
+          
+          // Сбрасываем картинку пылесоса в исходное состояние
+          lv_img_set_angle(img, 0);
+          lv_obj_set_x(img, 0);
+          lv_obj_set_y(img, -15);
+          
+          // Показываем иконку сна
+          lv_obj_clear_flag(sleep_icon, LV_OBJ_FLAG_HIDDEN);
+          
+          // ═══════════════════════════════════════════════════════════════
+          // АНИМАЦИЯ ПУЛЬСАЦИИ: opacity 0% → 100% → 0%
+          // ═══════════════════════════════════════════════════════════════
+          static lv_anim_t anim_pulse;
+          lv_anim_init(&anim_pulse);
+          lv_anim_set_var(&anim_pulse, sleep_icon);
+          lv_anim_set_values(&anim_pulse, LV_OPA_TRANSP, LV_OPA_COVER);  // 0 → 255
+          lv_anim_set_time(&anim_pulse, 1000);  // 1 секунда вперёд
+          lv_anim_set_playback_time(&anim_pulse, 1000);  // 1 секунда назад
+          lv_anim_set_repeat_count(&anim_pulse, LV_ANIM_REPEAT_INFINITE);
+          
+          // Callback для установки прозрачности
+          lv_anim_set_exec_cb(&anim_pulse, [](void * var, int32_t v) {
+            lv_obj_t* obj = (lv_obj_t*)var;
+            lv_obj_set_style_opa(obj, (lv_opa_t)v, LV_PART_MAIN);
+          });
+          
+          lv_anim_set_path_cb(&anim_pulse, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_pulse);
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Запуск анимации возврата на базу (покачивание ±15°)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: vacuum_start_go_home_animation
+    then:
+      - lambda: |-
+          ESP_LOGD("vacuum", "Starting go home animation (swing ±15°)");
+          
+          lv_obj_t* img = id(vacuum_state_image);
+          lv_anim_del(img, nullptr);
+          
+          lv_anim_t anim_go_home_swing;
+          
+          lv_anim_init(&anim_go_home_swing);
+          lv_anim_set_var(&anim_go_home_swing, img);
+          lv_anim_set_values(&anim_go_home_swing, -150, 150);  // -15° -> +15°
+          lv_anim_set_time(&anim_go_home_swing, 1000);
+          lv_anim_set_repeat_count(&anim_go_home_swing, LV_ANIM_REPEAT_INFINITE);
+          lv_anim_set_playback_time(&anim_go_home_swing, 1000);  // Возврат обратно
+          lv_anim_set_exec_cb(&anim_go_home_swing, [](void * var, int32_t v) {
+            lv_img_set_angle((lv_obj_t*)var, v);
+          });
+          lv_anim_set_path_cb(&anim_go_home_swing, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_go_home_swing);
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Запуск анимации зарядки (пульсация прозрачности)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: vacuum_start_charging_animation
+    then:
+      - lambda: |-
+          ESP_LOGD("vacuum", "Starting charging animation (pulse opacity)");
+          
+          lv_obj_t* img = id(vacuum_state_image);
+          lv_anim_del(img, nullptr);
+          
+          lv_anim_t anim_charging_pulse;
+          
+          lv_anim_init(&anim_charging_pulse);
+          lv_anim_set_var(&anim_charging_pulse, img);
+          lv_anim_set_values(&anim_charging_pulse, 80, 255);  // 30% -> 100%
+          lv_anim_set_time(&anim_charging_pulse, 1200);
+          lv_anim_set_repeat_count(&anim_charging_pulse, LV_ANIM_REPEAT_INFINITE);
+          lv_anim_set_playback_time(&anim_charging_pulse, 1200);
+          lv_anim_set_exec_cb(&anim_charging_pulse, [](void * var, int32_t v) {
+            lv_obj_set_style_img_opa((lv_obj_t*)var, v, 0);
+          });
+          lv_anim_set_path_cb(&anim_charging_pulse, lv_anim_path_ease_in_out);
+          lv_anim_start(&anim_charging_pulse);

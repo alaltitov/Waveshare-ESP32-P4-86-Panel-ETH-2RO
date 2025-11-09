@@ -1,0 +1,126 @@
+loading:
+  synchronization: "Синхронизация..."
+  connection_api: "Подключение к API..."
+
+ota:
+  start:
+    primary: "Запускается OTA!"
+    secondary: "Подождите..."
+  end: 
+    primary: "Обновление завершено!"
+    secondary: "Перезагрузка..."
+  error: 
+    primary: "ОШИБКА обновления!"
+    secondary: "Перезагрузка..."
+  progress: "Прогресс прошивки %0.1f%%"
+
+settings:
+  backlight: "Подсветка"
+  sleep_time: "Время сна экрана"
+
+sleep_time:
+  never: "Никогда"
+  minute1: "1 минута"
+  minute5: "5 минут"
+  minute10: "10 минут"
+  minute30: "30 минут"
+  hour1: "1 час"
+  hour6: "6 часов"
+  hour12: "12 часов"
+
+forecasts:
+  daily: "По дням"
+  hourly: "По часам"
+
+weather:
+  clear-night: "Ясная ночь"
+  cloudy: "Облачно"
+  exceptional: "Экстремальные условия"
+  fog: "Туман"
+  hail: "Град"
+  lightning: "Гроза"
+  lightning-rainy: "Дождь с грозой"
+  partlycloudy: "Переменная облачность"
+  pouring: "Ливень"
+  rainy: "Дождь"
+  snowy: "Снег"
+  snowy-rainy: "Снег с дождем"
+  sunny: "Ясно"
+  windy: "Ветрено"
+  windy-variant: "Ветрено, облачно"
+
+day_of_week:
+  monday: "Понедельник"
+  tuesday: "Вторник"
+  wednesday: "Среда"
+  thursday: "Четверг"
+  friday: "Пятница"
+  saturday: "Суббота"
+  sunday: "Воскресенье"
+
+day_of_week_short:
+  monday: "ПН"
+  tuesday: "ВТ"
+  wednesday: "СР"
+  thursday: "ЧТ"
+  friday: "ПТ"
+  saturday: "СБ"
+  sunday: "ВС"
+
+month:
+  january: "Января"
+  february: "Февраля"
+  march: "Марта"
+  april: "Апреля"
+  may: "Мая"
+  june: "Июня"
+  july: "Июля"
+  august: "Августа"
+  september: "Сентября"
+  october: "Октября"
+  november: "Ноября"
+  december: "Декабря"
+
+vacuum:
+  name: "Пылесос"
+  state:
+    cleaning: "Уборка"
+    docked: "У док-станции"
+    error: "Ошибка"
+    idle: "Бездействие"
+    off: "Выключено"
+    on: "Включено"
+    paused: "Пауза"
+    returning: "Возвращается к док-станции"
+
+cover:
+  name: "Заслон"
+  state:
+    closed: Закрыто
+    closing: Закрывается
+    open: Открыто
+    opening: Открывается
+    stopped: Остановлено
+
+alarm_panel:
+  name: "Панель сигнализации"
+  enter_pass: "Введите пароль"
+  wrong_pass: "Неверный пароль"
+  state:
+    armed: Под охраной
+    armed_away: Охрана (не дома)
+    armed_custom_bypass: Охрана с исключениями
+    armed_home: Охрана (дома)
+    armed_night: Охрана (ночь)
+    armed_vacation: Охрана (отпуск)
+    arming: Постановка на охрану
+    disarmed: Снято с охраны
+    disarming: Снятие с охраны
+    pending: Ожидание
+    triggered: Тревога
+
+fan:
+  name: "Вентилятор"
+  state:
+    "off": "Выключено"
+    "on": "Включено"

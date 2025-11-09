@@ -1,0 +1,150 @@
+substitutions:
+
+  radio_station:     "http://ep128.hostingradio.ru:8030/ep128"
+  radio_mp_entity:   "media_player.esp32_p4_waveshare_1_esp32_p4_media_player"
+
+text_sensor:
+  - platform: homeassistant
+    id: media_player_esphome
+    entity_id: "${radio_mp_entity}"
+              
+lvgl:
+  pages:
+    - id: radio_page
+      bg_color: color_slate_blue_gray
+      widgets:
+        - obj:
+            id: circular_button_obj
+            width: 200
+            height: 200
+            x: 100
+            y: 100
+            clickable: true
+            radius: 100
+            bg_opa: transp
+            border_opa: transp
+            border_width: 0
+            shadow_width: 36
+            shadow_spread: 4
+            shadow_color: 0x000000
+            pressed:
+              bg_color: 0x3A3A4C
+              shadow_width: 8
+            on_click:
+              - if:
+                  condition:
+                    lambda: |-
+                      return id(media_player_esphome).state == "idle";
+                  then:
+                    - lvgl.obj.update:
+                        id: circular_button_obj
+                        shadow_color: color_sky_blue
+                    - lvgl.label.update:
+                        id: label_play
+                        text_color: color_sky_blue
+                        text: "${pause_icon}"
+                    - homeassistant.action:
+                        action: media_player.play_media
+                        data:
+                          entity_id: "${radio_mp_entity}"
+                          media_content_type: music
+                          media_content_id: "${radio_station}"
+
+                  else:
+                    - lvgl.obj.update:
+                        id: circular_button_obj
+                        shadow_color: 0x000000
+                    - lvgl.label.update:
+                        id: label_play
+                        text_color: color_steel_blue
+                        text: "${play_icon}"
+                    - homeassistant.action:
+                        action: media_player.media_stop
+                        data:
+                          entity_id: "${radio_mp_entity}"     
+
+        - obj:
+            id: circular_button_obj1
+            width: 180
+            height: 180
+            x: 110
+            y: 110
+            clickable: false
+            radius: 95
+            bg_opa: transp 
+            border_opa: transp
+            shadow_width: 10
+            shadow_color: 0xFFFFFF
+            shadow_ofs_x: -8
+            shadow_ofs_y: -4
+            shadow_opa: 30%
+
+        - obj:
+            id: circular_button_obj2
+            width: 180
+            height: 180
+            x: 110
+            y: 110
+            clickable: false
+            radius: 95
+            bg_opa: transp 
+            border_opa: transp
+            shadow_width: 20
+            shadow_color: 0x000000
+            shadow_ofs_x: 8
+            shadow_ofs_y: 4
+            # shadow_opa: 80%
+
+        - obj:
+            id: circular_button_obj3
+            width: 190
+            height: 190
+            x: 105
+            y: 105
+            clickable: false
+            radius: 95
+            border_opa: transp
+            bg_color: color_slate_blue_gray
+            # shadow_width: 20
+            # shadow_color: color_black
+            widgets:
+              - label:
+                  id: label_play
+                  align: CENTER
+                  text_color: color_misty_blue
+                  text_font: mdi_icons_60
+                  text: "${play_icon}"
+
+
+        - image:
+            x: 400
+            y: 100
+            src: europa_plus_img
+
+
+        # BACK
+        - obj:
+            y: 0
+            width: 120
+            height: 75
+            align: bottom_mid
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 0
+            widgets:
+              - obj:
+                  y: -30
+                  width: 120
+                  height: 8
+                  align: bottom_mid
+                  bg_color: color_steel_blue
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 23 
+            on_click:
+              - lvgl.page.show: home_page
