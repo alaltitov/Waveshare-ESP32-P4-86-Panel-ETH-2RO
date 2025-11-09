@@ -1,12 +1,13 @@
 substitutions:
-  play_icon:         "\U0000e90a"
-  pause_icon:        "\U0000e90b"
+
+  radio_station:     "http://ep128.hostingradio.ru:8030/ep128"
+  radio_mp_entity:   "media_player.esp32_p4_waveshare_1_esp32_p4_media_player"
 
 text_sensor:
   - platform: homeassistant
     id: media_player_esphome
-    entity_id: media_player.esp32_p4_waveshare_1_esp32_p4_media_player
-
+    entity_id: "${radio_mp_entity}"
+              
 lvgl:
   pages:
     - id: radio_page
@@ -45,9 +46,10 @@ lvgl:
                     - homeassistant.action:
                         action: media_player.play_media
                         data:
-                          entity_id: media_player.esp32_p4_waveshare_1_esp32_p4_media_player
+                          entity_id: "${radio_mp_entity}"
                           media_content_type: music
-                          media_content_id: http://ep128.hostingradio.ru:8030/ep128
+                          media_content_id: "${radio_station}"
+
                   else:
                     - lvgl.obj.update:
                         id: circular_button_obj
@@ -59,7 +61,8 @@ lvgl:
                     - homeassistant.action:
                         action: media_player.media_stop
                         data:
-                          entity_id: media_player.esp32_p4_waveshare_esp32_p4_media_player                        
+                          entity_id: "${radio_mp_entity}"     
+
         - obj:
             id: circular_button_obj1
             width: 180
@@ -109,13 +112,39 @@ lvgl:
                   id: label_play
                   align: CENTER
                   text_color: color_misty_blue
-                  text_font: icons_48
+                  text_font: mdi_icons_60
                   text: "${play_icon}"
 
-
-   
 
         - image:
             x: 400
             y: 100
             src: europa_plus_img
+
+
+        # BACK
+        - obj:
+            y: 0
+            width: 120
+            height: 75
+            align: bottom_mid
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 0
+            widgets:
+              - obj:
+                  y: -30
+                  width: 120
+                  height: 8
+                  align: bottom_mid
+                  bg_color: color_steel_blue
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 23 
+            on_click:
+              - lvgl.page.show: home_page

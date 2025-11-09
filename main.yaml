@@ -65,17 +65,16 @@ esp32:
     type: esp-idf
     advanced:
       enable_idf_experimental_features: yes
-    sdkconfig_options:
-      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
-      CONFIG_SPIRAM_RODATA: y
-      CONFIG_BOOTLOADER_SKIP_VALIDATE_ON_POWER_ON: y
+    # sdkconfig_options:
+    #   CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+    #   CONFIG_SPIRAM_RODATA: y
 
 
 logger:
   level: debug
-  # logs:
-  #   lvgl: info
-  # hardware_uart: UART0
+  logs:
+    lvgl: info
+  hardware_uart: UART0
 
 # debug:
 

@@ -3086,7 +3086,7 @@ lvgl:
               - label:
                   id: climate_state_icon
                   align: center
-                  text_font: icons_48
+                  text_font: icons_72
                   text_color: color_steel_blue
                   text: "${temperature_icon}"
             on_click:
