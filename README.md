@@ -41,9 +41,11 @@
 
 <div style="padding-top: 40px;">
   <a href="https://t.me/esphome_lvgl_chats">
-    <img src="/docs/images/t_me-esphome_lvgl_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
+    <img src="/docs/images/t_me_chats.jpg" alt="QR Code" width="150" align="left" hspace="10"/>
   </a>
 </div>
+
+<br clear="all"/>
 
 ## ⚠️ Important Notice
 - You'll need the DEV version of ESPHome 2025.11.0.
