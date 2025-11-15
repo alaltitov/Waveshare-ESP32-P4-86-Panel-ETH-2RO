@@ -4,13 +4,13 @@ packages:
   home: !include pages/home/home.yaml
   light: !include pages/light/config.yaml
   devices: !include common/pages/devices.yaml
-  alarm_panel: !include pages/alarm_panel/config.yaml
-  climate: !include pages/climate/climate.yaml
-  cover: !include pages/cover/config.yaml
-  fan: !include pages/fan/config.yaml
+  # alarm_panel: !include pages/alarm_panel/config.yaml
+  # climate: !include pages/climate/climate.yaml
+  # cover: !include pages/cover/config.yaml
+  # fan: !include pages/fan/config.yaml
   media_player: !include pages/media_player/media_player.yaml
-  radio: !include pages/radio/radio.yaml
-  vacuum: !include pages/vacuum/vacuum.yaml
+  # radio: !include pages/radio/radio.yaml
+  # vacuum: !include pages/vacuum/vacuum.yaml
 
 image: !include common/images.yaml
 font: !include common/fonts.yaml
@@ -18,19 +18,24 @@ color: !include common/colors.yaml
 substitutions: !include common/substitutions.yaml
 
 external_components:
-  - source: github://pr#10562
-    components: [mipi_dsi]
-    refresh: 1h
 
-  - source: github://alaltitov/esphome@main
+  - source: github://alaltitov/esphome@dev
     components: [i18n]
     refresh: 1h
+
 
 i18n:
   id: i18n_translations
   sources:
-    - translations/ru.yaml
     - translations/en.yaml
+    - translations/es.yaml
+    - translations/fr.yaml
+    - translations/nl.yaml
+    - translations/pl.yaml
+    - translations/ru.yaml
+    - translations/si.yaml
+    - translations/it.yaml
+    - translations/de.yaml
   default_locale: ru
 
 
@@ -65,10 +70,9 @@ esp32:
     type: esp-idf
     advanced:
       enable_idf_experimental_features: yes
-    # sdkconfig_options:
-    #   CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
-    #   CONFIG_SPIRAM_RODATA: y
-
+    sdkconfig_options:
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
 
 logger:
   level: debug
@@ -105,6 +109,12 @@ esp32_hosted:
   d1_pin: GPIO15
   d2_pin: GPIO16
   d3_pin: GPIO17
+
+# update:
+#   - platform: esp32_hosted
+#     name: C6_update
+#     path: network_adapter.bin
+#     sha256: 1b1f6619689543c8a929db56db98a5663965bae9671a4a16436a90f4baa0f012
 
 wifi:
   ssid: !secret wifi_ssid

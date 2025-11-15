@@ -1,4 +1,6 @@
 /.esphome/
 /src/secrets.yaml
+/slave/
+/esp-idf/
 /.DS_Store
 /.vscode/

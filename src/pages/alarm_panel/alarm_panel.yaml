@@ -1,11 +1,13 @@
 packages:
   animations: !include animations.yaml
 
+
+
 globals:
   - id: ${widget_name}_supported_features
     type: int
     restore_value: no
-    initial_value: '63'
+    initial_value: '63'  # По умолчанию все функции
 
   - id: ${widget_name}_current_mode
     type: int
@@ -16,6 +18,7 @@ globals:
     restore_value: no
     initial_value: ""
 
+
 sensor:
   - platform: homeassistant
     id: ${widget_name}_supported_features_sensor
@@ -25,6 +28,7 @@ sensor:
       - lambda: |-
           id(${widget_name}_supported_features) = x;
       - script.execute: ${widget_name}_visibility_buttons
+
 
 text_sensor:
   - platform: homeassistant
@@ -38,10 +42,13 @@ text_sensor:
           
           ESP_LOGI("AP", "State changed: '%s' -> '%s'", old_state.c_str(), new_state.c_str());
           
+          // Сохраняем новое состояние
           id(${widget_name}_pending_action) = new_state;
           
+          // Определяем, это первая загрузка или изменение состояния
           bool is_first_boot = (old_state == "" || old_state == new_state);
           
+          // Определяем категории состояний
           bool new_is_disarmed = (new_state == "disarmed");
           bool new_is_armed = (new_state == "armed_home" || 
                                new_state == "armed_away" || 
@@ -56,6 +63,7 @@ text_sensor:
                                old_state == "armed_custom_bypass" || 
                                old_state == "armed_vacation");
 
+      # ARMING - мигающая желтая иконка (через LVGL анимацию)
       - if:
           condition:
             lambda: 'return id(${widget_name}_state_sensor).state == "arming";'
@@ -69,6 +77,7 @@ text_sensor:
                 text: "${shield_arming_icon}"
             - script.execute: ${widget_name}_blink
 
+      # TRIGGERED
       - if:
           condition:
             lambda: 'return id(${widget_name}_state_sensor).state == "triggered";'
@@ -82,6 +91,7 @@ text_sensor:
                 text: "${shield_arming_icon}"
             - script.execute: ${widget_name}_blink
 
+      # Обновляем иконки для всех состояний
       - if:
           condition:
             lambda: 'return id(${widget_name}_state_sensor).state == "disarmed";'
@@ -160,6 +170,7 @@ text_sensor:
                 text: "${shield_vacation_icon}"
             - script.execute: ${widget_name}_blink_stop
 
+      # Логика анимации
       - lambda: |-
           std::string new_state = id(${widget_name}_state_sensor).state;
           std::string old_state = id(${widget_name}_pending_action);
@@ -181,20 +192,27 @@ text_sensor:
                                old_state == "armed_vacation");
           
           if (is_first_boot) {
+            // Первая загрузка
             if (new_is_disarmed) {
-              id(${widget_name}_switch_to_mode).execute(6);
+              id(${widget_name}_switch_to_mode).execute(6);  // INIT -> DISARMED
             } else if (new_is_armed) {
-              id(${widget_name}_switch_to_mode).execute(7);
+              id(${widget_name}_switch_to_mode).execute(7);  // INIT -> ARMED
             }
           } else {
+            // Изменение состояния
             if (old_is_disarmed && new_is_armed) {
+              // DISARMED -> ARMED (прямой переход из HA)
               id(${widget_name}_switch_to_mode).execute(4);
             } else if (old_is_armed && new_is_disarmed) {
+              // ARMED -> DISARMED (прямой переход из HA)
               id(${widget_name}_switch_to_mode).execute(5);
             } else if (old_is_armed && new_is_armed) {
+              // ARMED -> ARMED (смена режима охраны, просто обновляем иконку)
+              // Анимация уже не нужна, иконка обновлена выше
               ESP_LOGI("AP", "Armed mode changed, icon updated");
             }
           }
+
 
   - platform: homeassistant
     id: ${widget_name}_name_sensor
@@ -205,7 +223,10 @@ text_sensor:
           id: ${widget_name}_name_label
           text: !lambda return x;
 
+
+
 lvgl:
+
   pages:
     - id: ${widget_name}_page
       bg_color: color_black
@@ -247,6 +268,7 @@ lvgl:
                   border_width: 0
                   shadow_opa: transp
                   widgets:
+                    # ICON
                     - obj:
                         id: ${widget_name}_state_icon_bg
                         y: 30
@@ -266,6 +288,7 @@ lvgl:
                               text_color: color_misty_blue
                               text: "${shield_arming_icon}"
 
+                    # STATE INFO
                     - obj:
                         y: 51
                         width: 600
@@ -290,11 +313,12 @@ lvgl:
                               text_font: nunito_30
                               text: "Disarmed"
 
+
               - obj:
                   id: ${widget_name}_keypad_widget
                   hidden: true
                   width: 660
-                  height: 435
+                  height: 540
                   pad_all: 0
                   align: top_left
                   bg_opa: transp
@@ -325,8 +349,8 @@ lvgl:
 
                     - buttonmatrix:
                         id: ${widget_name}_keypad
-                        width: 450
-                        height: 330
+                        width: 435
+                        height: 390
                         pad_all: 30
                         bg_opa: transp
                         border_opa: transp
@@ -391,6 +415,8 @@ lvgl:
                                 control:
                                   no_repeat: true
 
+
+
         - obj:
             id: ${widget_name}_primary_buttons_background
             y: 375
@@ -406,6 +432,7 @@ lvgl:
             border_width: 0
             shadow_opa: transp
             widgets:
+
               - obj:
                   id: ${widget_name}_primary_buttons_container
                   hidden: true
@@ -427,6 +454,7 @@ lvgl:
                     flex_align_cross: center
                     flex_align_track: center
                   widgets:
+
                     # HOME
                     - obj:
                         id: ${widget_name}_home_btn_bg
@@ -532,6 +560,7 @@ lvgl:
                                     id: ${widget_name}_switch_to_mode
                                     target_mode: 2
 
+
                           - obj:
                               width: 75
                               height: 75
@@ -562,6 +591,7 @@ lvgl:
                                     text_font: mdi_icons_42
                                     text_color: color_misty_blue
                                     text: "${shield_away_icon}"
+                  
 
                     # NIGHT
                     - obj:
@@ -631,6 +661,7 @@ lvgl:
                                     text_color: color_misty_blue
                                     text: "${shield_night_icon}"
 
+
                     # CUSTOM
                     - obj:
                         id: ${widget_name}_custom_btn_bg
@@ -698,6 +729,7 @@ lvgl:
                                     text_font: mdi_icons_42
                                     text_color: color_misty_blue
                                     text: "${shield_custom_icon}"
+
 
                     # VACATION
                     - obj:
@@ -767,6 +799,8 @@ lvgl:
                                     text_color: color_misty_blue
                                     text: "${shield_vacation_icon}"
 
+
+
         - obj:
             id: ${widget_name}_secondary_buttons_background
             y: 540
@@ -806,6 +840,7 @@ lvgl:
                   radius: 75
                   border_opa: transp
                   bg_color: color_slate_blue_gray
+
 
               - obj:
                   width: 225
@@ -864,6 +899,7 @@ lvgl:
                                     id: ${widget_name}_switch_to_mode
                                     target_mode: 0
 
+
         # back
         - obj:
             y: 0
@@ -887,10 +923,12 @@ lvgl:
                   border_opa: transp
                   border_width: 0
                   shadow_opa: transp
-                  radius: 23
+                  radius: 23 
             on_click:
               - lvgl.widget.hide: alarm_panel_select_widget
               - lvgl.page.show: home_page
+
+
 
 key_collector:
   - source_id: ${widget_name}_keypad
@@ -902,14 +940,18 @@ key_collector:
     allowed_keys: "0123456789*#"
     timeout: 5s
     on_progress:
-      - if:
-          condition:
-            lambda: return (0 != x.compare(std::string{""}));
-          then:
-            - lvgl.label.update:
-                id: ${widget_name}_keypad_code_label
+      - if: 
+          condition: 
+            lambda: return x.size() > 0; 
+          then: 
+            - lvgl.label.update: 
+                id: ${widget_name}_keypad_code_label 
                 text: !lambda |-
-                  return std::string(x.length(), '*').c_str();
+                  return std::string(x.size(), '*');
+          else: 
+            - lvgl.label.update: 
+                id: ${widget_name}_keypad_code_label
+                text: ""
 
     on_result:
       - if:
@@ -1002,33 +1044,39 @@ key_collector:
                 text: !lambda |-
                   return id(i18n_translations).translate("alarm_panel.enter_pass");
 
+# Скрипт для создания кнопок динамически
 script:
   - id: ${widget_name}_visibility_buttons
     then:
       - lambda: |-
+          // Получаем значение supported_features
           int features = id(${widget_name}_supported_features);
           
           ESP_LOGI("alarm", "Updating button visibility, features: %d", features);
           
+          // Определяем структуру для кнопок
           struct AlarmButton {
             int flag;
             const char* obj_id;
           };
           
+          // Массив кнопок с их ID и флагами
           AlarmButton buttons[] = {
-            {1, "${widget_name}_home_btn_bg"},
-            {2, "${widget_name}_away_btn_bg"},
-            {4, "${widget_name}_night_btn_bg"},
-            {16, "${widget_name}_custom_btn_bg"},
-            {32, "${widget_name}_vacation_btn_bg"}
+            {1, "${widget_name}_home_btn_bg"},        // ARM_HOME
+            {2, "${widget_name}_away_btn_bg"},        // ARM_AWAY
+            {4, "${widget_name}_night_btn_bg"},       // ARM_NIGHT
+            {16, "${widget_name}_custom_btn_bg"},     // ARM_CUSTOM_BYPASS
+            {32, "${widget_name}_vacation_btn_bg"}    // ARM_VACATION
           };
           
+          // Проверяем каждую кнопку и показываем/скрываем
           for (int i = 0; i < 5; i++) {
             bool should_show = (features & buttons[i].flag) != 0;
             
             ESP_LOGI("alarm", "Button %s: flag=%d, should_show=%d", 
                      buttons[i].obj_id, buttons[i].flag, should_show);
             
+            // Получаем объект кнопки по ID
             lv_obj_t* btn = nullptr;
             
             if (strcmp(buttons[i].obj_id, "${widget_name}_home_btn_bg") == 0) {
@@ -1043,6 +1091,7 @@ script:
               btn = id(${widget_name}_vacation_btn_bg);
             }
             
+            // Показываем или скрываем кнопку
             if (btn != nullptr) {
               if (should_show) {
                 lv_obj_clear_flag(btn, LV_OBJ_FLAG_HIDDEN);
@@ -1052,26 +1101,32 @@ script:
             }
           }
           
+          // Обновляем layout контейнера
           lv_obj_update_layout(id(${widget_name}_primary_buttons_container));
 
+
+  # Универсальный скрипт мигания (работает с любым цветом)
   - id: ${widget_name}_blink
     then:
       - lambda: |-
+          // Останавливаем все предыдущие анимации на этом объекте
           lv_anim_del(id(${widget_name}_state_icon_bg), nullptr);
           
+          // Создаем бесконечную анимацию мигания
           lv_anim_t anim_blink;
           lv_anim_init(&anim_blink);
           lv_anim_set_var(&anim_blink, id(${widget_name}_state_icon_bg));
           lv_anim_set_values(&anim_blink, LV_OPA_0, LV_OPA_30);
           lv_anim_set_time(&anim_blink, 500);
-          lv_anim_set_playback_time(&anim_blink, 500);
-          lv_anim_set_repeat_count(&anim_blink, LV_ANIM_REPEAT_INFINITE);
+          lv_anim_set_playback_time(&anim_blink, 500);  // Обратная анимация
+          lv_anim_set_repeat_count(&anim_blink, LV_ANIM_REPEAT_INFINITE);  // Бесконечно
           lv_anim_set_exec_cb(&anim_blink, [](void * var, int32_t v) {
             lv_obj_set_style_bg_opa((lv_obj_t*)var, v, 0);
           });
           lv_anim_set_path_cb(&anim_blink, lv_anim_path_ease_in_out);
           lv_anim_start(&anim_blink);
 
+  # Скрипт остановки мигания
   - id: ${widget_name}_blink_stop
     then:
       - lambda: |-

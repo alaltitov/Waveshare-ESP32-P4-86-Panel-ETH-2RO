@@ -1,0 +1,1119 @@
+globals:
+  - id: ${widget_name}_current_hue
+    type: float
+    initial_value: '0.0'
+
+  - id: ${widget_name}_current_saturation
+    type: float
+    initial_value: '0.0'
+
+  - id: ${widget_name}_current_brightness
+    type: int
+    initial_value: '100'
+
+  - id: ${widget_name}_current_color_temp
+    type: float
+    initial_value: '3000.0'
+
+  - id: ${widget_name}_is_temp_mode
+    type: bool
+    initial_value: 'false'
+
+  # Новые глобальные переменные для хранения поддерживаемых режимов
+  - id: ${widget_name}_supports_color_temp
+    type: bool
+    initial_value: 'false'
+
+  - id: ${widget_name}_supports_hs
+    type: bool
+    initial_value: 'false'
+
+  - id: ${widget_name}_supports_rgb
+    type: bool
+    initial_value: 'false'
+
+  - id: ${widget_name}_supports_brightness
+    type: bool
+    initial_value: 'false'
+
+
+binary_sensor:
+  # НОВОЕ: Отслеживание состояния лампы (on/off)
+  - platform: homeassistant
+    id: ${widget_name}_light_state
+    entity_id: "${light_entity}"
+    on_state:
+      # При изменении состояния лампы обновляем цвет виджета
+      - script.execute: ${widget_name}_update_lightbulb_color
+
+  # ИСПРАВЛЕНО: Управление кнопкой лампочки
+  - platform: lvgl
+    id: ${widget_name}_light_btn_control
+    widget: ${widget_name}_lightbulb_btn
+    on_click:
+      # КОРОТКОЕ нажатие (50-500ms) - ВСЕГДА включает/выключает лампу
+      - min_length: 50ms
+        max_length: 500ms
+        then:
+          - homeassistant.action:
+              action: light.toggle
+              data:
+                entity_id: "${light_entity}"
+          - lambda: |-
+              ESP_LOGD("light_btn", "Short press - toggling light");
+      
+      # ДОЛГОЕ нажатие (800-3000ms) - переключение режима (только если поддерживается)
+      - min_length: 800ms
+        max_length: 3000ms
+        then:
+          - if:
+              condition:
+                lambda: |-
+                  // Переключаем режим только если лампа поддерживает ОБА режима
+                  return id(${widget_name}_supports_color_temp) && 
+                         (id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb));
+              then:
+                - lambda: |-
+                    id(${widget_name}_is_temp_mode) = !id(${widget_name}_is_temp_mode);
+                    ESP_LOGD("light_btn", "Long press - switching mode to: %s", 
+                      id(${widget_name}_is_temp_mode) ? "ColorTemp" : "HS");
+                - script.execute: ${widget_name}_toggle_gradient
+              else:
+                - lambda: |-
+                    ESP_LOGD("light_btn", "Long press ignored - only one color mode supported");
+
+
+
+sensor:
+  # Brightness sensor
+  - platform: homeassistant
+    id: ${widget_name}_light_rgb_sensor_brightness
+    entity_id: "${light_entity}"
+    attribute: brightness
+    on_value:
+      - if:
+          condition:
+            lambda: 'return !std::isnan(x);'
+          then:
+            - globals.set:
+                id: ${widget_name}_current_brightness
+                value: !lambda return x;
+            - lvgl.slider.update:
+                id: ${widget_name}_light_brightness_slider
+                value: !lambda return int(x);
+            - script.execute: ${widget_name}_update_lightbulb_color
+
+  # Color temp sensor
+  - platform: homeassistant
+    id: ${widget_name}_light_sensor_color_temp
+    entity_id: "${light_entity}"
+    attribute: color_temp_kelvin
+    on_value:
+      - if:
+          condition:
+            lambda: 'return !std::isnan(x);'
+          then:
+            - globals.set:
+                id: ${widget_name}_current_color_temp
+                value: !lambda return x;
+            - lvgl.arc.update:
+                id: ${widget_name}_light_arc_color_temp
+                value: !lambda return int(x);
+            # НОВОЕ: Обновляем цвет лампочки при изменении температуры от HA
+            # Но только если мы в режиме color_temp
+            - if:
+                condition:
+                  lambda: 'return id(${widget_name}_is_temp_mode);'
+                then:
+                  - script.execute: ${widget_name}_update_lightbulb_color
+
+text_sensor:
+
+  # HS Color sensor
+  - platform: homeassistant
+    id: ${widget_name}_light_sensor_hs
+    entity_id: "${light_entity}"
+    attribute: hs_color
+    on_value:
+      - if:
+          condition:
+            lambda: "return x != \"None\" && !x.empty();"
+          then:
+            - lambda: |-
+                std::string s = x;
+                size_t start = s.find('(') + 1;
+                size_t comma = s.find(',');
+                size_t end = s.find(')');
+                float hue = 0.0f, sat = 0.0f;
+                if (start < comma && comma < end) {
+                  hue = atof(s.substr(start, comma - start).c_str());
+                  sat = atof(s.substr(comma + 1, end - comma - 1).c_str());
+                }
+                id(${widget_name}_current_hue) = hue;
+                id(${widget_name}_current_saturation) = sat;
+            - lvgl.arc.update:
+                id: ${widget_name}_light_arc_hue
+                value: !lambda return id(${widget_name}_current_hue);
+            # ИСПРАВЛЕНО: Обновляем saturation slider только если он видим
+            - if:
+                condition:
+                  lambda: |-
+                    return !id(${widget_name}_is_temp_mode) && 
+                           (id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb));
+                then:
+                  - lvgl.slider.update:
+                      id: ${widget_name}_light_saturation_slider
+                      value: !lambda return id(${widget_name}_current_saturation);
+            
+            # НОВОЕ: Обновляем цвет лампочки при изменении HS от HA
+            # Но только если мы в режиме HS
+            - if:
+                condition:
+                  lambda: 'return !id(${widget_name}_is_temp_mode);'
+                then:
+                  - script.execute: ${widget_name}_update_lightbulb_color
+
+  # НОВЫЙ СЕНСОР: Определение поддерживаемых режимов цвета
+  # Этот сенсор читает атрибут supported_color_modes и определяет возможности лампы
+  - platform: homeassistant
+    id: ${widget_name}_light_supported_modes
+    entity_id: "${light_entity}"
+    attribute: supported_color_modes
+    on_value:
+      - lambda: |-
+          // Парсим строку с поддерживаемыми режимами
+          std::string modes = x;
+          
+          // Проверяем наличие каждого режима
+          id(${widget_name}_supports_color_temp) = (modes.find("color_temp") != std::string::npos);
+          id(${widget_name}_supports_hs) = (modes.find("hs") != std::string::npos);
+          id(${widget_name}_supports_rgb) = (modes.find("rgb") != std::string::npos);
+          
+          id(${widget_name}_supports_brightness) = (
+            modes.find("brightness") != std::string::npos ||
+            id(${widget_name}_supports_hs) ||
+            id(${widget_name}_supports_rgb) ||
+            id(${widget_name}_supports_color_temp)
+          );
+          
+          ESP_LOGD("light_widget", "═══════════════════════════════════════");
+          ESP_LOGD("light_widget", "Supported modes: %s", modes.c_str());
+          ESP_LOGD("light_widget", "Color temp: %d, HS: %d, RGB: %d, Brightness: %d",
+            id(${widget_name}_supports_color_temp),
+            id(${widget_name}_supports_hs),
+            id(${widget_name}_supports_rgb),
+            id(${widget_name}_supports_brightness)
+          );
+          
+          // ═══════════════════════════════════════════════════════════════════
+          // НОВОЕ: Умный выбор начального режима
+          // ═══════════════════════════════════════════════════════════════════
+          
+          if (id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb)) {
+            // Если поддерживается HS/RGB - начинаем с него (более универсальный)
+            id(${widget_name}_is_temp_mode) = false;
+            ESP_LOGD("light_widget", "→ Initial mode: HS (preferred for color lights)");
+          } else if (id(${widget_name}_supports_color_temp)) {
+            // Если только ColorTemp - используем его
+            id(${widget_name}_is_temp_mode) = true;
+            ESP_LOGD("light_widget", "→ Initial mode: ColorTemp (only option)");
+          } else {
+            // Если ничего не поддерживается - не важно
+            id(${widget_name}_is_temp_mode) = false;
+            ESP_LOGD("light_widget", "→ Initial mode: N/A (no color modes)");
+          }
+          
+          ESP_LOGD("light_widget", "═══════════════════════════════════════");
+      
+      # После определения режимов обновляем видимость виджетов
+      - script.execute: ${widget_name}_update_widget_visibility
+
+  - platform: homeassistant
+    id: ${widget_name}_light_name
+    entity_id: "${light_entity}"
+    attribute: friendly_name
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: ${widget_name}_light_name_label
+            text: !lambda return x;
+
+
+lvgl:
+
+  gradients:
+    - id: ${widget_name}_hue_gradient
+      direction: ver
+      dither: none
+      stops:
+        - color: 0xFF0000
+          position: 0
+        - color: 0xFF00FF
+          position: 42
+        - color: 0x0000FF
+          position: 84
+        - color: 0x00FFFF
+          position: 127
+        - color: 0x00FF00
+          position: 169
+        - color: 0xFFFF00
+          position: 212
+        - color: 0xFF0000
+          position: 255
+
+    - id: ${widget_name}_color_temp_gradient
+      direction: ver
+      dither: none
+      stops:
+        - color: 0xA0C8FF
+          position: 0
+        - color: 0xE0F7FF
+          position: 80
+        - color: 0xFFFFFF
+          position: 128
+        - color: 0xFFFFE0
+          position: 175
+        - color: 0xFFD6A0
+          position: 255
+
+
+  pages:
+    - id: ${widget_name}_light_page
+      bg_color: color_slate_blue_gray
+      widgets:
+        # BRIGHTNESS SLIDER
+        - obj:
+            id: ${widget_name}_light_brightness_background
+            x: -240
+            y: 0
+            radius: 30
+            width: 120
+            height: 390
+            align: center
+            bg_color: color_slate_blue_gray
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_color: color_black
+            shadow_spread: 3
+            shadow_width: 12
+            widgets:
+              - slider:
+                  id: ${widget_name}_light_brightness_slider
+                  radius: 24
+                  width: 90
+                  height: 360
+                  align: center
+                  bg_color: color_steel_blue
+                  shadow_color: color_black
+                  shadow_spread: 6
+                  shadow_width: 9
+                  shadow_opa: transp
+                  min_value: 2
+                  max_value: 255
+                  indicator:
+                    bg_color: color_deep_orange
+                    radius: 15
+                  knob:
+                    bg_opa: transp
+                  
+                  # НОВОЕ: on_value для обновления цвета лампочки в реальном времени
+                  on_value:
+                    - globals.set:
+                        id: ${widget_name}_current_brightness
+                        value: !lambda return int(x);
+                    - script.execute: ${widget_name}_update_lightbulb_color
+                  
+                  on_release:
+                    - homeassistant.action:
+                        action: light.turn_on
+                        data:
+                          entity_id: "${light_entity}"
+                          brightness: !lambda return int(x);
+
+        # SATURATION SLIDER
+        - obj:
+            id: ${widget_name}_light_saturation_background
+            x: -90
+            y: 0
+            radius: 30
+            width: 120
+            height: 390
+            align: center
+            bg_color: color_slate_blue_gray
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_color: color_black
+            shadow_spread: 3
+            shadow_width: 12
+            widgets:
+              - slider:
+                  id: ${widget_name}_light_saturation_slider
+                  radius: 24
+                  width: 90
+                  height: 360
+                  align: center
+                  bg_color: color_steel_blue
+                  shadow_color: color_black
+                  shadow_spread: 6
+                  shadow_width: 9
+                  shadow_opa: transp
+                  min_value: 0
+                  max_value: 100
+                  indicator:
+                    bg_color: color_red
+                    radius: 15
+                  knob:
+                    bg_opa: transp
+                  
+                  # НОВОЕ: on_value для обновления цвета лампочки в реальном времени
+                  on_value:
+                    - globals.set:
+                        id: ${widget_name}_current_saturation
+                        value: !lambda return x;
+                    - script.execute: ${widget_name}_update_lightbulb_color
+                  
+                  on_release:
+                    - homeassistant.action:
+                        action: light.turn_on
+                        data:
+                          entity_id: "${light_entity}"
+                        data_template:
+                          hs_color: "{{ (hue|float, sat|float)|list }}"
+                        variables:
+                          hue: !lambda return id(${widget_name}_current_hue);
+                          sat: !lambda return x;
+
+        # LIGHT NAME                  
+        - label:
+            id: ${widget_name}_light_name_label
+            y: -45
+            x: 0
+            height: 60
+            width: 360
+            long_mode: dot
+            align: bottom_left
+            text_font: nunito_24
+            text_align: center
+            text_color: color_misty_blue
+            text: "Friendly name"
+
+        # LIGHT ARC
+        - obj:
+            id: ${widget_name}_light_bg_main_temperature
+            hidden: false
+            width: 360
+            height: 720
+            align: right_mid
+            pad_all: 0
+            bg_opa: transp
+            clickable: false
+            scrollable: false
+            border_opa: transp 
+            border_width: 0
+            shadow_opa: transp
+            widgets:
+
+              - obj:
+                  x: 360
+                  width: 720
+                  height: 720
+                  scrollable: false
+                  align: right_mid
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  widgets:
+                    - obj:
+                        width: 690
+                        height: 690
+                        align: center
+                        clickable: true
+                        radius: 390
+                        bg_opa: transp
+                        bg_color: color_slate_blue_gray
+                        border_color: color_black
+                        border_opa: 40%
+                        border_width: 5
+              
+              - obj:
+                  id: ${widget_name}_hue_gradient_obj
+                  hidden: true
+                  x: 333
+                  width: 666
+                  height: 666
+                  radius: 333
+                  align: right_mid
+                  pad_all: 0
+                  bg_grad: ${widget_name}_hue_gradient
+                  bg_grad_dir: ver
+                  shadow_opa: transp
+                  border_opa: transp
+                  border_width: 0
+
+              - obj:
+                  id: ${widget_name}_color_temp_gradient_obj
+                  x: 333
+                  width: 666
+                  height: 666
+                  radius: 333
+                  align: right_mid
+                  pad_all: 0
+                  bg_grad: ${widget_name}_color_temp_gradient
+                  bg_grad_dir: ver
+                  shadow_opa: transp
+                  border_opa: transp
+                  border_width: 0
+
+              - obj:
+                  x: 282
+                  width: 564
+                  height: 564
+                  align: right_mid
+                  clickable: false
+                  radius: 345
+                  bg_color: color_slate_blue_gray
+                  border_width: 0
+                  border_opa: transp
+
+              - obj:
+                  x: 275
+                  width: 549
+                  height: 549
+                  align: right_mid
+                  radius: 345
+                  bg_color: color_slate_blue_gray
+                  border_color: color_white
+                  border_width: 5
+                  border_opa: 15%
+
+              # BACKGROUND ARC
+              - obj:
+                  x: 333
+                  width: 666
+                  height: 666
+                  radius: 333
+                  align: right_mid
+                  pad_all: 0
+                  bg_opa: transp
+                  shadow_opa: transp
+                  border_opa: transp
+                  border_width: 0
+                  widgets:
+                    # ARC для HUE (оттенок)
+                    - arc:
+                        id: ${widget_name}_light_arc_hue
+                        hidden: true
+                        clickable: true
+                        adjustable: true
+                        adv_hittest: true
+                        align: center
+                        width: 666
+                        height: 666
+                        start_angle: 0
+                        end_angle: 180
+                        min_value: 0
+                        max_value: 360
+                        value: 265
+                        arc_width: 51
+                        rotation: 90.0
+                        arc_opa: transp
+                        indicator:
+                          arc_opa: transp
+                          arc_width: 51
+                        knob:
+                          pad_all: 0
+                          bg_opa: transp
+                          border_color: color_steel_blue
+                          border_width: 6
+                          shadow_opa: transp
+                        
+                        # НОВОЕ: on_value для обновления цвета лампочки в реальном времени
+                        on_value:
+                          - globals.set:
+                              id: ${widget_name}_current_hue
+                              value: !lambda return x;
+                          - script.execute: ${widget_name}_update_lightbulb_color
+
+                        on_release:
+                          - homeassistant.action:
+                              action: light.turn_on
+                              data:
+                                entity_id: "${light_entity}"
+                              data_template:
+                                hs_color: "{{ (hue|float, sat|float)|list }}"
+                              variables:
+                                hue: !lambda return x;
+                                sat: !lambda return id(${widget_name}_current_saturation);
+
+                    # ARC для COLOR TEMP (цветовая температура)
+                    - arc:
+                        id: ${widget_name}_light_arc_color_temp
+                        hidden: false
+                        clickable: true
+                        adjustable: true
+                        adv_hittest: true
+                        align: center
+                        width: 666
+                        height: 666
+                        start_angle: 0
+                        end_angle: 180
+                        min_value: 2000
+                        max_value: 6500
+                        value: 3000
+                        arc_width: 51
+                        rotation: 90.0
+                        arc_opa: transp
+                        indicator:
+                          arc_opa: transp
+                          arc_width: 51
+                        knob:
+                          pad_all: 0
+                          bg_opa: transp
+                          border_color: color_steel_blue
+                          border_width: 6
+                          shadow_opa: transp
+                        
+                        # НОВОЕ: on_value для обновления цвета лампочки в реальном времени
+                        on_value:
+                          - globals.set:
+                              id: ${widget_name}_current_color_temp
+                              value: !lambda return x;
+                          - script.execute: ${widget_name}_update_lightbulb_color
+
+                        on_release:
+                          - homeassistant.action:
+                              action: light.turn_on
+                              data:
+                                entity_id: "${light_entity}"
+                                color_temp_kelvin: !lambda return int(x);
+
+        # LIGHTBULB
+        - obj:
+            id: ${widget_name}_lightbulb_btn
+            x: 0
+            width: 240
+            height: 240
+            align: right_mid
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 150
+            widgets:
+              # ВИДЖЕТ ЦВЕТА ЛАМПОЧКИ - обновляется динамически
+              - obj:
+                  id: ${widget_name}_lightbulb_color
+                  clickable: false
+                  x: 0
+                  y: -45
+                  width: 105
+                  height: 105
+                  radius: 53
+                  align: center
+                  bg_color: color_light_gray
+                  border_opa: transp
+                  shadow_opa: transp
+                  
+              - image:
+                  id: ${widget_name}_lightbulb_image
+                  x: 0
+                  y: 35
+                  align: center
+                  src: lightbulb_image
+
+
+        # BACK
+        - obj:
+            id: ${widget_name}_light_back_btn 
+            x: 225
+            y: 0
+            width: 120
+            height: 105
+            align: bottom_left
+            bg_opa: transp
+            pad_all: 0
+            border_opa: transp
+            border_width: 0
+            shadow_opa: transp
+            radius: 0
+            widgets:
+              - obj:
+                  y: -30
+                  width: 120
+                  height: 8
+                  align: bottom_mid
+                  bg_color: color_steel_blue
+                  pad_all: 0
+                  border_opa: transp
+                  border_width: 0
+                  shadow_opa: transp
+                  radius: 23
+            on_click:
+              - lvgl.widget.hide: light_select_widget
+              - delay: 100ms
+              - lvgl.page.show: home_page
+
+
+script:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Переключение между режимами color_temp и hs
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: ${widget_name}_toggle_gradient
+    then:
+      - if:
+          condition:
+            lambda: return id(${widget_name}_is_temp_mode);
+          then:
+            # ─────────────────────────────────────────────────────────────────
+            # РЕЖИМ COLOR_TEMP
+            # ─────────────────────────────────────────────────────────────────
+            - lvgl.widget.hide: ${widget_name}_hue_gradient_obj
+            - lvgl.widget.hide: ${widget_name}_light_arc_hue
+            - lvgl.widget.show: ${widget_name}_color_temp_gradient_obj
+            - lvgl.widget.show: ${widget_name}_light_arc_color_temp
+            - lvgl.widget.hide: ${widget_name}_light_saturation_background
+            - lvgl.obj.update:
+                id: ${widget_name}_light_brightness_background
+                x: -165
+
+          else:
+            # ─────────────────────────────────────────────────────────────────
+            # РЕЖИМ HUE/SATURATION
+            # ─────────────────────────────────────────────────────────────────
+            - lvgl.widget.hide: ${widget_name}_color_temp_gradient_obj
+            - lvgl.widget.hide: ${widget_name}_light_arc_color_temp
+            - lvgl.widget.show: ${widget_name}_hue_gradient_obj
+            - lvgl.widget.show: ${widget_name}_light_arc_hue
+            - if:
+                condition:
+                  lambda: 'return id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb);'
+                then:
+                  - lvgl.widget.show: ${widget_name}_light_saturation_background
+                  - lvgl.obj.update:
+                      id: ${widget_name}_light_brightness_background
+                      x: -240
+
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Обновление цвета виджета лампочки
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: ${widget_name}_update_lightbulb_color
+    then:
+      - lambda: |-
+          int r = 255, g = 255, b = 255;
+          
+          // ═══════════════════════════════════════════════════════════════════
+          // ПРОВЕРЯЕМ: Поддерживает ли лампа цветовые режимы?
+          // ═══════════════════════════════════════════════════════════════════
+          bool has_color_modes = id(${widget_name}_supports_hs) || 
+                                 id(${widget_name}_supports_rgb) || 
+                                 id(${widget_name}_supports_color_temp);
+          
+          // ═══════════════════════════════════════════════════════════════════
+          // ПРОВЕРЯЕМ: Включена ли лампа?
+          // ═══════════════════════════════════════════════════════════════════
+          bool is_light_on = id(${widget_name}_light_state).state;
+          
+          if (!is_light_on) {
+            // ═════════════════════════════════════════════════════════════════
+            // ЛАМПА ВЫКЛЮЧЕНА → СЕРЫЙ ЦВЕТ (независимо от режима)
+            // ═════════════════════════════════════════════════════════════════
+            r = 153;  // 60% от 255
+            g = 153;
+            b = 153;
+            
+          } else if (has_color_modes) {
+            // ═════════════════════════════════════════════════════════════════
+            // РЕЖИМ 1: ЛАМПА ВКЛЮЧЕНА + ПОДДЕРЖКА ЦВЕТА (HS/RGB/ColorTemp)
+            // ═════════════════════════════════════════════════════════════════
+            
+            if (id(${widget_name}_is_temp_mode)) {
+              // ───────────────────────────────────────────────────────────────
+              // ПОДРЕЖИМ: ЦВЕТОВАЯ ТЕМПЕРАТУРА (Color Temp)
+              // Конвертируем Kelvin → RGB
+              // ───────────────────────────────────────────────────────────────
+              float temp = id(${widget_name}_current_color_temp) / 100.0;
+              
+              // Алгоритм конвертации цветовой температуры в RGB
+              // Источник: Tanner Helland algorithm
+              
+              // Красный канал
+              if (temp <= 66) {
+                r = 255;
+              } else {
+                r = temp - 60;
+                r = 329.698727446 * pow(r, -0.1332047592);
+                r = (r < 0) ? 0 : ((r > 255) ? 255 : r);
+              }
+              
+              // Зеленый канал
+              if (temp <= 66) {
+                g = temp;
+                g = 99.4708025861 * log(g) - 161.1195681661;
+              } else {
+                g = temp - 60;
+                g = 288.1221695283 * pow(g, -0.0755148492);
+              }
+              g = (g < 0) ? 0 : ((g > 255) ? 255 : g);
+              
+              // Синий канал
+              if (temp >= 66) {
+                b = 255;
+              } else if (temp <= 19) {
+                b = 0;
+              } else {
+                b = temp - 10;
+                b = 138.5177312231 * log(b) - 305.0447927307;
+                b = (b < 0) ? 0 : ((b > 255) ? 255 : b);
+              }            
+              
+            } else {
+              // ───────────────────────────────────────────────────────────────
+              // ПОДРЕЖИМ: HUE/SATURATION (HS)
+              // Конвертируем HSV → RGB
+              // ───────────────────────────────────────────────────────────────
+              float h = id(${widget_name}_current_hue);
+              float s = id(${widget_name}_current_saturation) / 100.0;
+              float v = 1.0; // Используем полную яркость для отображения цвета
+              
+              float c = v * s;
+              float x = c * (1 - fabs(fmod(h / 60.0, 2) - 1));
+              float m = v - c;
+              
+              float r_prime, g_prime, b_prime;
+              
+              if (h >= 0 && h < 60) {
+                r_prime = c; g_prime = x; b_prime = 0;
+              } else if (h >= 60 && h < 120) {
+                r_prime = x; g_prime = c; b_prime = 0;
+              } else if (h >= 120 && h < 180) {
+                r_prime = 0; g_prime = c; b_prime = x;
+              } else if (h >= 180 && h < 240) {
+                r_prime = 0; g_prime = x; b_prime = c;
+              } else if (h >= 240 && h < 300) {
+                r_prime = x; g_prime = 0; b_prime = c;
+              } else {
+                r_prime = c; g_prime = 0; b_prime = x;
+              }
+              
+              r = (r_prime + m) * 255;
+              g = (g_prime + m) * 255;
+              b = (b_prime + m) * 255;
+              
+            }
+            
+            // ─────────────────────────────────────────────────────────────────
+            // Применяем масштабирование яркости: 60% → 100%
+            // ─────────────────────────────────────────────────────────────────
+            float real_brightness = id(${widget_name}_current_brightness) / 255.0;
+            float brightness_display = 0.6 + (real_brightness * 0.4);
+            
+            r = r * brightness_display;
+            g = g * brightness_display;
+            b = b * brightness_display;     
+            
+          } else {
+            // ═════════════════════════════════════════════════════════════════
+            // РЕЖИМ 2: ЛАМПА ВКЛЮЧЕНА + БЕЗ ЦВЕТА (brightness/onoff)
+            // ═════════════════════════════════════════════════════════════════
+            
+            // ───────────────────────────────────────────────────────────────
+            // ЛАМПА ВКЛЮЧЕНА → ЖЕЛТЫЙ ЦВЕТ (0xFFFF00)
+            // ───────────────────────────────────────────────────────────────
+            r = 255;
+            g = 255;
+            b = 0;
+            
+            // Если есть brightness - применяем масштабирование
+            if (id(${widget_name}_supports_brightness)) {
+              float real_brightness = id(${widget_name}_current_brightness) / 255.0;
+              float brightness_display = 0.6 + (real_brightness * 0.4);
+              
+              r = r * brightness_display;
+              g = g * brightness_display;
+              b = b * brightness_display;
+              
+            } else {
+              // Без brightness - просто желтый на 80%
+              r = 204; // 80% от 255
+              g = 204;
+              b = 0;
+              
+            }
+          }
+          
+          // ═══════════════════════════════════════════════════════════════════
+          // ПРИМЕНЕНИЕ ЦВЕТА К ВИДЖЕТУ
+          // ═══════════════════════════════════════════════════════════════════
+          
+          // Формируем цвет в формате 0xRRGGBB
+          uint32_t color = (r << 16) | (g << 8) | b;
+          
+          // Устанавливаем цвет виджета лампочки
+          lv_obj_set_style_bg_color(id(${widget_name}_lightbulb_color), lv_color_hex(color), 0);
+          lv_obj_set_style_text_color(id(${widget_name}_icon), lv_color_hex(color), 0);
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # СКРИПТ: Обновление видимости виджетов
+  # ═══════════════════════════════════════════════════════════════════════════
+  - id: ${widget_name}_update_widget_visibility
+    then:
+      # ═════════════════════════════════════════════════════════════════════
+      # УПРАВЛЕНИЕ ВИДИМОСТЬЮ АРОК И ПОЗИЦИЕЙ КНОПКИ ЛАМПОЧКИ
+      # ═════════════════════════════════════════════════════════════════════
+      - lambda: |-
+          // Проверяем наличие "арочных" режимов (HS или ColorTemp)
+          bool has_arc_modes = id(${widget_name}_supports_hs) || 
+                               id(${widget_name}_supports_rgb) || 
+                               id(${widget_name}_supports_color_temp);
+      
+      - if:
+          condition:
+            lambda: |-
+              return id(${widget_name}_supports_hs) || 
+                     id(${widget_name}_supports_rgb) || 
+                     id(${widget_name}_supports_color_temp);
+          then:
+            # ─────────────────────────────────────────────────────────────────
+            # ЕСТЬ АРОЧНЫЕ РЕЖИМЫ → Показываем арки, кнопка справа
+            # ─────────────────────────────────────────────────────────────────
+            - lvgl.widget.show: ${widget_name}_light_bg_main_temperature
+            - lvgl.obj.update:
+                id: ${widget_name}_lightbulb_btn
+                align: right_mid
+                x: 0
+                y: 0
+            - lvgl.obj.update:
+                id: ${widget_name}_light_back_btn
+                align: bottom_left
+                x: 225
+            # Label в режиме с арками
+            - lvgl.obj.update:
+                id: ${widget_name}_light_name_label
+                align: bottom_left
+                x: 30
+
+          else:
+            # ─────────────────────────────────────────────────────────────────
+            # НЕТ АРОЧНЫХ РЕЖИМОВ → Скрываем арки, позиционируем кнопки
+            # ─────────────────────────────────────────────────────────────────
+            - lvgl.widget.hide: ${widget_name}_light_bg_main_temperature
+            
+            # Label в режиме БЕЗ арок
+            - lvgl.obj.update:
+                id: ${widget_name}_light_name_label
+                align: bottom_mid
+                x: 0
+            
+            # Проверяем: onoff режим (кнопка в центр) или brightness (кнопка выше центра)
+            - if:
+                condition:
+                  lambda: 'return !id(${widget_name}_supports_brightness);'
+                then:
+                  # ═══════════════════════════════════════════════════════════
+                  # РЕЖИМ ONOFF → Кнопка лампочки в центр
+                  # ═══════════════════════════════════════════════════════════
+                  - lvgl.obj.update:
+                      id: ${widget_name}_lightbulb_btn
+                      align: center
+                      x: 0
+                      y: -60
+                else:
+                  # ═══════════════════════════════════════════════════════════
+                  # РЕЖИМ BRIGHTNESS БЕЗ АРОК → Кнопка лампочки выше центра
+                  # ═══════════════════════════════════════════════════════════
+                  - lvgl.obj.update:
+                      id: ${widget_name}_lightbulb_btn
+                      align: center
+                      x: 0
+                      y: -60
+            
+            # Кнопка BACK всегда внизу по центру в режимах без арок
+            - lvgl.obj.update:
+                id: ${widget_name}_light_back_btn
+                align: bottom_mid
+                x: 0
+      
+      # ─────────────────────────────────────────────────────────────────────
+      # УПРАВЛЕНИЕ ВИДИМОСТЬЮ СЛАЙДЕРА ЯРКОСТИ
+      # ─────────────────────────────────────────────────────────────────────
+      - if:
+          condition:
+            lambda: 'return id(${widget_name}_supports_brightness);'
+          then:
+            - lvgl.widget.show: ${widget_name}_light_brightness_background
+            
+            # Проверяем режим (с арками или без)
+            - if:
+                condition:
+                  lambda: |-
+                    return id(${widget_name}_supports_hs) || 
+                           id(${widget_name}_supports_rgb) || 
+                           id(${widget_name}_supports_color_temp);
+                then:
+                  # ═══════════════════════════════════════════════════════════
+                  # РЕЖИМ С АРКАМИ → Вертикальный слайдер слева
+                  # ═══════════════════════════════════════════════════════════
+                  - if:
+                      condition:
+                        lambda: |-
+                          return !id(${widget_name}_is_temp_mode) && 
+                                 (id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb));
+                      then:
+                        # Saturation видим → brightness на -240
+                        - lvgl.obj.update:
+                            id: ${widget_name}_light_brightness_background
+                            x: -240
+                            y: 0
+                            radius: 30
+                            width: 120
+                            height: 390
+                        - lvgl.slider.update:
+                            id: ${widget_name}_light_brightness_slider
+                            width: 90
+                            height: 360
+                      else:
+                        # Saturation скрыт → brightness на -165
+                        - lvgl.obj.update:
+                            id: ${widget_name}_light_brightness_background
+                            x: -165
+                            y: 0
+                            radius: 30
+                            width: 120
+                            height: 390
+                        - lvgl.slider.update:
+                            id: ${widget_name}_light_brightness_slider
+                            width: 90
+                            height: 360
+                else:
+                  # ═══════════════════════════════════════════════════════════
+                  # РЕЖИМ БЕЗ АРОК → Горизонтальный слайдер по центру
+                  # ═══════════════════════════════════════════════════════════
+                  - lvgl.obj.update:
+                      id: ${widget_name}_light_brightness_background
+                      x: 0
+                      y: 150
+                      radius: 30
+                      width: 390
+                      height: 120
+                  - lvgl.slider.update:
+                      id: ${widget_name}_light_brightness_slider
+                      width: 360
+                      height: 90
+
+          else:
+            - lvgl.widget.hide: ${widget_name}_light_brightness_background
+      
+      # ─────────────────────────────────────────────────────────────────────
+      # УПРАВЛЕНИЕ ВИДИМОСТЬЮ СЛАЙДЕРА НАСЫЩЕННОСТИ
+      # ─────────────────────────────────────────────────────────────────────
+      - if:
+          condition:
+            lambda: 'return id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb);'
+          then:
+            # Если мы в режиме HS - показываем, если в режиме temp - скрываем
+            - if:
+                condition:
+                  lambda: 'return !id(${widget_name}_is_temp_mode);'
+                then:
+                  - lvgl.widget.show: ${widget_name}_light_saturation_background
+                  # Brightness на исходной позиции
+                  - lvgl.obj.update:
+                      id: ${widget_name}_light_brightness_background
+                      x: -240
+
+                else:
+                  - lvgl.widget.hide: ${widget_name}_light_saturation_background
+                  # Brightness сдвинут вправо
+                  - lvgl.obj.update:
+                      id: ${widget_name}_light_brightness_background
+                      x: -165
+
+          else:
+            - lvgl.widget.hide: ${widget_name}_light_saturation_background
+      
+      # ─────────────────────────────────────────────────────────────────────
+      # УПРАВЛЕНИЕ ВИДИМОСТЬЮ HS ДУГИ И ГРАДИЕНТА
+      # ─────────────────────────────────────────────────────────────────────
+      - if:
+          condition:
+            lambda: 'return id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb);'
+          then:
+            # Поддерживается HS - показываем дугу и градиент в режиме HS
+            - if:
+                condition:
+                  lambda: 'return !id(${widget_name}_is_temp_mode);'
+                then:
+                  - lvgl.widget.show: ${widget_name}_hue_gradient_obj
+                  - lvgl.widget.show: ${widget_name}_light_arc_hue
+
+                else:
+                  - lvgl.widget.hide: ${widget_name}_hue_gradient_obj
+                  - lvgl.widget.hide: ${widget_name}_light_arc_hue
+
+          else:
+            # HS не поддерживается - всегда скрываем
+            - lvgl.widget.hide: ${widget_name}_hue_gradient_obj
+            - lvgl.widget.hide: ${widget_name}_light_arc_hue
+      
+      # ─────────────────────────────────────────────────────────────────────
+      # УПРАВЛЕНИЕ ВИДИМОСТЬЮ COLOR TEMP ДУГИ И ГРАДИЕНТА
+      # ─────────────────────────────────────────────────────────────────────
+      - if:
+          condition:
+            lambda: 'return id(${widget_name}_supports_color_temp);'
+          then:
+            # Поддерживается Color Temp - показываем дугу и градиент в режиме temp
+            - if:
+                condition:
+                  lambda: 'return id(${widget_name}_is_temp_mode);'
+                then:
+                  - lvgl.widget.show: ${widget_name}_color_temp_gradient_obj
+                  - lvgl.widget.show: ${widget_name}_light_arc_color_temp
+
+                else:
+                  - lvgl.widget.hide: ${widget_name}_color_temp_gradient_obj
+                  - lvgl.widget.hide: ${widget_name}_light_arc_color_temp
+
+          else:
+            # Color Temp не поддерживается - всегда скрываем
+            - lvgl.widget.hide: ${widget_name}_color_temp_gradient_obj
+            - lvgl.widget.hide: ${widget_name}_light_arc_color_temp
+      
+      # ─────────────────────────────────────────────────────────────────────
+      # АВТОМАТИЧЕСКИЙ ВЫБОР РЕЖИМА (если лампа поддерживает только один)
+      # ─────────────────────────────────────────────────────────────────────
+      - if:
+          condition:
+            lambda: |-
+              // Если лампа НЕ поддерживает оба режима - выбираем доступный
+              return !(id(${widget_name}_supports_color_temp) && 
+                      (id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb)));
+          then:
+            
+            # Автоматический выбор режима
+            - if:
+                condition:
+                  lambda: 'return id(${widget_name}_supports_hs) || id(${widget_name}_supports_rgb);'
+                then:
+                  # Если поддерживается только цвет - переключаемся в режим HS
+                  - lambda: |-
+                      id(${widget_name}_is_temp_mode) = false;
+                  - script.execute: ${widget_name}_toggle_gradient
+                else:
+                  - if:
+                      condition:
+                        lambda: 'return id(${widget_name}_supports_color_temp);'
+                      then:
+                        # Если поддерживается только температура - переключаемся в режим temp
+                        - lambda: |-
+                            id(${widget_name}_is_temp_mode) = true;
+                        - script.execute: ${widget_name}_toggle_gradient
+

@@ -1006,12 +1006,12 @@ lvgl:
                                 bg_color: color_steel_blue
                                 shadow_width: 6
                               on_click:
-                                - lvgl.page.show: ${light_widget_name_1}_light_page
+                                - script.execute: switch_to_room_1
                                 - delay: 250ms
                                 - lambda: |-
-                                    int lights = ${lights_amount};
-                                    if (lights >= 2) {
-                                      lv_obj_clear_flag(id(light_select_widget), LV_OBJ_FLAG_HIDDEN);
+                                    int rooms = ${rooms_amount};
+                                    if (rooms >= 2) {
+                                      lv_obj_clear_flag(id(room_select_widget), LV_OBJ_FLAG_HIDDEN);
                                     }
 
                           - obj:
@@ -1609,6 +1609,9 @@ mapping:
       it: flags_it_img
       pt: flags_pt_img
       ru: flags_ru_img
+      nl: flags_nl_img
+      si: flags_si_img
+      pl: flags_pl_img
 
 script:
 

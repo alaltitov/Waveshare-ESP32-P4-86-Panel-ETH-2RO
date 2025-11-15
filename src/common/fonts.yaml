@@ -333,6 +333,9 @@
     "\U000F12D4", # garage_opened
     "\U000F00AC", # blinds_closed 
     "\U000F1011", # blinds_opened
+    "\U000F04A6", # silverware variant
+    "\U000F02E3", # bed
+    "\U000F1818", # bathtub
   ]
 
 
@@ -341,6 +344,7 @@
   size: 42
   bpp: 4
   glyphs: [
+    "\U000F0335", # lightbulb
     "\U000F0238", # heat
     "\U000F0717", # cool
     "\U000F1A79", # heat_cool

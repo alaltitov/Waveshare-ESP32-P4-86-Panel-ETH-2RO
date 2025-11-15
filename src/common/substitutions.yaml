@@ -31,7 +31,7 @@ wifi_100_icon:              "\U0000e934" # wifi signal from 100% to 75% or disab
 
 humidity_icon:              "\U0000e938" 
 temperature_icon:           "\U0000e939" 
-lightbulb_icon:             "\U0000e908"
+lightbulb_icon:             "\U000F0335"
 ceiling_lights_icon:        "\U000F18DD"
 brightness_icon:            "\U000F1A4D" 
 info_icon:                  "\U000F1C70"
