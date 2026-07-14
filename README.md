@@ -1,3 +1,16 @@
+<div style="
+    display: flex;
+    justify-content: center;
+    border: 3px solid #3774ee; 
+    border-radius: 18px; 
+    padding: 15px;
+    color: white;
+">
+    My new <a href="https://alaltitov.github.io/DarkForgeUI-firmware" style="color: #3774ee; font-weight: bold; text-decoration: underline; margin: 0 5px;"> project </a> for ESP32-S3/P4 smart home devices. No Code. No Compile.
+</div>
+
+##
+
 # LVGL ESPhome Waveshare-ESP32-P4-86-Panel-ETH-2RO custom firmware
 
 <p align="center">
